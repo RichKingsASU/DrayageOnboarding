@@ -5,6 +5,7 @@ import {
   INITIAL_CONTACTS, 
   INITIAL_ACCESSORIALS 
 } from './mockData';
+import { supabase } from './lib/supabaseClient';
 import { useAccounts } from './hooks/useAccounts';
 import KanbanBoard from './components/KanbanBoard';
 import CustomerDashboard from './components/CustomerDashboard';
@@ -51,9 +52,11 @@ export default function App() {
     }
   };
 
-  // State Updates handler callbacks
-  const handleUpdateAccountStage = (accountId: string, newStage: PipelineStage) => {
+  const handleUpdateAccountStage = async (accountId: string, newStage: PipelineStage) => {
+    // Optimistic UI update
     setAccounts(prev => prev.map(a => a.id === accountId ? { ...a, stage: newStage } : a));
+    // Persist to Supabase
+    await supabase.from('accounts').update({ stage: newStage }).eq('id', accountId);
   };
 
   const handleSelectAccount = (accountId: string) => {
