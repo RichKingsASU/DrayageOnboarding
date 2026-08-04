@@ -5,6 +5,7 @@ import {
   INITIAL_CONTACTS, 
   INITIAL_ACCESSORIALS 
 } from './mockData';
+import { useAccounts } from './hooks/useAccounts';
 import KanbanBoard from './components/KanbanBoard';
 import CustomerDashboard from './components/CustomerDashboard';
 import { 
@@ -27,37 +28,17 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
 
-  // Load state from LocalStorage or fall back to mock data
-  const [accounts, setAccounts] = useState<Account[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY_ACTS);
-    return saved ? JSON.parse(saved) : INITIAL_ACCOUNTS;
-  });
+  const { accounts, loading, setAccounts } = useAccounts();
 
-  const [contacts, setContacts] = useState<Contact[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY_CONS);
-    return saved ? JSON.parse(saved) : INITIAL_CONTACTS;
-  });
-
-  const [accessorials, setAccessorials] = useState<AccessorialSOP[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY_ACC);
-    return saved ? JSON.parse(saved) : INITIAL_ACCESSORIALS;
-  });
+  // For the demo, we still use local state for contacts and accessorials,
+  // but they could be populated from the nested accounts data.
+  const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
+  const [accessorials, setAccessorials] = useState<AccessorialSOP[]>(INITIAL_ACCESSORIALS);
 
   // Showcase assistant state
   const [showWalkthrough, setShowWalkthrough] = useState(true);
 
-  // Sync to LocalStorage on changes
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY_ACTS, JSON.stringify(accounts));
-  }, [accounts]);
-
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY_CONS, JSON.stringify(contacts));
-  }, [contacts]);
-
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY_ACC, JSON.stringify(accessorials));
-  }, [accessorials]);
+  // Synced with Supabase via useAccounts hook.
 
   // Reset entire state callback
   const handleResetDemoData = () => {

@@ -18,6 +18,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { uploadDocumentToSupabase } from '../lib/supabaseClient';
 
 interface SecureDocumentUploaderProps {
   accountName: string;
@@ -134,94 +135,75 @@ export default function SecureDocumentUploader({
     setDocType(tpl.type);
   };
 
-  // Start processing workflow
-  const startUploadAndProcessing = () => {
+  const startUploadAndProcessing = async () => {
     const fileNameToUse = customName 
       ? (customName.endsWith('.pdf') ? customName : `${customName}.pdf`)
       : (selectedFile ? selectedFile.name : `Drayage_Doc_${Date.now()}.pdf`);
 
-    const sizeToUse = selectedFile 
-      ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` 
-      : `${(Math.random() * 2 + 1).toFixed(1)} MB`;
-
     setProcessing({
       isProcessing: true,
       step: 1,
-      progress: 15,
-      statusMessage: 'Encrypting payload via AES-256 and validating checksum...'
+      progress: 25,
+      statusMessage: 'Uploading document to encrypted vault...'
     });
 
-    // Step 2: OCR Parsing
-    setTimeout(() => {
-      setProcessing(prev => ({
-        ...prev,
-        step: 2,
-        progress: 45,
-        statusMessage: 'Parsing PDF text, signatures, & tax EIN via OCR compliance engine...'
-      }));
-    }, 700);
-
-    // Step 3: Compliance Audit
-    setTimeout(() => {
+    try {
+      // Step 1 & 2: Real Upload
+      const fileToUpload = selectedFile || new File(["dummy content"], fileNameToUse, { type: "application/pdf" });
+      const docRecord = await uploadDocumentToSupabase(accountId, fileToUpload, docType);
+      
       setProcessing(prev => ({
         ...prev,
         step: 3,
         progress: 75,
-        statusMessage: 'Checking port liability minimums & credit application agreement...'
+        statusMessage: 'Running OCR and checking compliance minimums...'
       }));
-    }, 1400);
 
-    // Step 4: Vault Storage & Finish
-    setTimeout(() => {
-      const generatedHash = `0x${Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      const pagesCount = Math.floor(Math.random() * 4) + 1;
+      // Simulate a small delay for OCR UX
+      setTimeout(() => {
+        const generatedHash = `0x${Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+        const pagesCount = Math.floor(Math.random() * 4) + 1;
 
-      const newDoc: OnboardingDocument = {
-        id: `doc_${Date.now()}`,
-        name: fileNameToUse,
-        type: docType,
-        uploadedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        size: sizeToUse,
-        contentKey: JSON.stringify({
-          type: 'checklist',
-          data: {
-            creditApp: docType === 'Credit Application',
-            db: true,
-            contract: docType === 'Liability Agreement',
-            rateAgreement: 'Standard Drayage Tariff',
-            fuelAgreement: true,
-            accessorialAgreement: true,
-            workOrderReceived: true,
-            onboardingCallCompleted: true,
-            auditCompleted: true,
-            internalMeetingDate: new Date().toISOString(),
-            externalMeetingDate: new Date().toISOString(),
-            notes: `Verified secure PDF upload: ${fileNameToUse}. Document encrypted (AES-256) and verified for ${accountName}. Compliance hash: ${generatedHash}.`
+        const newDoc: OnboardingDocument = {
+          id: docRecord.id,
+          name: docRecord.name,
+          type: docRecord.type as DocType,
+          uploadedAt: new Date(docRecord.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          size: `${(docRecord.size_bytes / (1024 * 1024)).toFixed(2)} MB`,
+          contentKey: docRecord.storage_path
+        };
+
+        setProcessing({
+          isProcessing: false,
+          step: 4,
+          progress: 100,
+          statusMessage: 'Document verified, audited, and stored in Document Vault!',
+          detectedMeta: {
+            pages: pagesCount,
+            signaturesFound: true,
+            einDetected: true,
+            insuranceVerified: true,
+            hash: generatedHash
           }
-        })
-      };
+        });
 
+        onUploadDocument(newDoc);
+        setLastUploadedDoc(newDoc);
+
+        // Reset form fields
+        setSelectedFile(null);
+        setCustomName('');
+      }, 1000);
+
+    } catch (err) {
+      console.error(err);
       setProcessing({
         isProcessing: false,
-        step: 4,
-        progress: 100,
-        statusMessage: 'Document verified, audited, and stored in Document Vault!',
-        detectedMeta: {
-          pages: pagesCount,
-          signaturesFound: true,
-          einDetected: true,
-          insuranceVerified: true,
-          hash: generatedHash
-        }
+        step: 0,
+        progress: 0,
+        statusMessage: 'Upload failed. Please try again.'
       });
-
-      onUploadDocument(newDoc);
-      setLastUploadedDoc(newDoc);
-
-      // Reset form fields
-      setSelectedFile(null);
-      setCustomName('');
-    }, 2100);
+    }
   };
 
   return (
