@@ -4,9 +4,10 @@
  * Dependencies: Shared TypeScript domain types from types.ts.
  * Maintainer note: Data reflects business scenarios and should not be treated as production customer records.
  */
-import { Account, Contact, Lane, AccessorialSOP } from './types';
+import { Account, Contact, Lane, AccessorialSOP, ChecklistState } from './types';
+import { buildDefaultChecklist, ChecklistDefaultsInput } from './onboardingRules';
 
-export const INITIAL_ACCOUNTS: Account[] = [
+const DEMO_ACCOUNTS: Account[] = [
   {
     id: 'act_1',
     name: 'Chalas Supply Inc.',
@@ -246,6 +247,45 @@ export const INITIAL_ACCOUNTS: Account[] = [
     ]
   }
 ];
+
+type DemoChecklistOverride = Omit<ChecklistDefaultsInput, 'account'>;
+
+const DEMO_CHECKLIST_OVERRIDES: Record<string, DemoChecklistOverride> = {
+  act_1: {
+    fuelAgreement: true,
+    accessorialAgreement: true,
+    completedBy: 'Demo Pricing Specialist',
+    completedDate: '2026-06-19',
+    internalMeetingDate: '2026-06-19T09:30',
+    externalMeetingDate: '2026-06-19T11:00',
+  },
+  act_2: {
+    accessorialAgreement: true,
+    completedBy: 'Demo Pricing Specialist',
+    completedDate: '2026-06-19',
+    internalMeetingDate: '2026-06-19T09:30',
+    externalMeetingDate: '2026-06-19T11:00',
+  },
+  act_amazon: {
+    rateAgreement: 'Tariff',
+    fuelAgreement: true,
+    accessorialAgreement: true,
+    completedBy: 'Demo Pricing Specialist',
+    completedDate: '2026-06-19',
+    internalMeetingDate: '2026-06-19T09:30',
+    externalMeetingDate: '2026-06-19T11:00',
+  },
+};
+
+function demoChecklistState(account: Account): ChecklistState {
+  return buildDefaultChecklist({ account, ...(DEMO_CHECKLIST_OVERRIDES[account.id] || {}) });
+}
+
+export const INITIAL_ACCOUNTS: Account[] = DEMO_ACCOUNTS.map((account) => ({
+  ...account,
+  checklistState: demoChecklistState(account),
+}));
+
 
 export const INITIAL_CONTACTS: Contact[] = [
   // Chalas Supply

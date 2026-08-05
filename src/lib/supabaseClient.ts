@@ -5,7 +5,8 @@
  * Maintainer note: Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY at runtime.
  */
 import { createClient } from '@supabase/supabase-js';
-import { Account, AccessorialSOP, ChecklistState, OnboardingDocument } from '../types';
+import { Account, AccessorialSOP, OnboardingDocument } from '../types';
+import { DOCUMENT_CHECKLIST_ITEM_BY_TYPE } from '../documentChecklistMapping';
 
 const runtimeEnv = (typeof import.meta !== 'undefined' && import.meta.env) || process.env;
 const supabaseUrl = runtimeEnv.VITE_SUPABASE_URL || '';
@@ -31,13 +32,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const DOCUMENT_MAX_BYTES = 15 * 1024 * 1024;
 /** File extensions accepted by the onboarding document validator. */
 export const DOCUMENT_ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'] as const;
-/** Maps uploaded document types to checklist fields completed by those uploads. */
-export const DOCUMENT_CHECKLIST_ITEM_BY_TYPE: Partial<Record<OnboardingDocument['type'], keyof ChecklistState>> = {
-  'SOP Document': 'filesUploaded',
-  'Credit Application': 'creditApp',
-  'Liability Agreement': 'contract'
-};
-
 /** MIME types accepted by the onboarding document validator when the browser provides one. */
 export const DOCUMENT_ALLOWED_MIME_TYPES = [
   'application/pdf',

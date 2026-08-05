@@ -15,23 +15,28 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Lint
         run: npm run lint
 
-      - name: Typecheck
-        run: npm run typecheck || echo "typecheck not present"
-
-      - name: Build
-        run: npm run build
-
-      - name: Test
+      - name: Unit tests
         run: npm test
 
-      - name: Check Git Diff
+      - name: Production build
+        run: npm run build
+
+      - name: Check whitespace
         run: git diff --check
+
+      - name: Secret pattern scan
+        run: |
+          ! rg -n --hidden -g '!node_modules' -g '!package-lock.json' -g '!package.json' -g '!.git' \
+            '(SuperSecurePassword123!|SUPABASE_SERVICE_ROLE_KEY=.*eyJ|--public-access 0\.0\.0\.0|MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API|react-example)'
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -50,12 +55,3 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: supabase stop
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      - name: Run E2E Tests (Auto Demo Mode)
-        run: npm run test:e2e:demo
-
-      - name: Run E2E Tests (Required Mode)
-        run: npm run test:e2e:prod

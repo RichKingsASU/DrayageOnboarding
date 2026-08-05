@@ -9,54 +9,62 @@ import { Account, ChecklistState, PipelineStage } from './types';
 /**
  * Returns the persisted checklist state when available, otherwise derives the default checklist for a prospect or existing account.
  */
-export function initializeChecklist(account: Account): ChecklistState {
-  if (account.checklistState) {
-    return account.checklistState;
-  }
-
-  if (account.isNewProspect) {
-    return {
-      creditApp: false,
-      db: false,
-      contract: false,
-      rateAgreement: 'Contract',
-      fuelAgreement: false,
-      accessorialAgreement: false,
-      folderCreated: false,
-      filesUploaded: false,
-      internalMeetingDate: '',
-      externalMeetingDate: '',
-      summaryEmailSent: false,
-      auditCompleted: !!account.auditChecklistCompleted,
-      workOrderReceived: false,
-      onboardingCallCompleted: false,
-      notes: '',
-      completedBy: 'Tanya Wahl',
-      completedDate: '2026-06-19'
-    };
-  } else {
-    return {
-      creditApp: account.creditTerms !== 'Prepaid',
-      db: account.creditTerms !== 'Prepaid',
-      contract: account.stage !== 'CustomerInquiry',
-      rateAgreement: account.id === 'act_amazon' ? 'Tariff' : 'Contract',
-      fuelAgreement: account.prefCommMethod === 'EDI' || account.id === 'act_amazon' || account.id === 'act_1',
-      accessorialAgreement: account.id === 'act_1' || account.id === 'act_2' || account.id === 'act_amazon',
-      folderCreated: true,
-      filesUploaded: account.documents.some(d => d.type === 'SOP Document'),
-      internalMeetingDate: '2026-06-19T09:30',
-      externalMeetingDate: '2026-06-19T11:00',
-      summaryEmailSent: account.stage === 'OngoingSupport' || account.stage === 'OperationalKickoff',
-      auditCompleted: !!account.auditChecklistCompleted,
-      workOrderReceived: account.stage === 'OngoingSupport',
-      onboardingCallCompleted: account.stage === 'OngoingSupport' || account.stage === 'OperationalKickoff',
-      notes: `Review process completed. Account is currently on stage: ${account.stage}. Credit terms approved at ${account.creditTerms}.`,
-      completedBy: 'Tanya Wahl',
-      completedDate: '2026-06-19'
-    };
-  }
+export interface ChecklistDefaultsInput {
+  account: Account;
+  completedBy?: string;
+  completedDate?: string;
+  internalMeetingDate?: string;
+  externalMeetingDate?: string;
+  rateAgreement?: string;
+  fuelAgreement?: boolean;
+  accessorialAgreement?: boolean;
+  notes?: string;
 }
 
+/**
+ * Builds a generic checklist default from account state plus optional persisted or fixture-supplied metadata.
+ */
+export function buildDefaultChecklist({
+  account,
+  completedBy = '',
+  completedDate = '',
+  internalMeetingDate = '',
+  externalMeetingDate = '',
+  rateAgreement,
+  fuelAgreement,
+  accessorialAgreement,
+  notes,
+}: ChecklistDefaultsInput): ChecklistState {
+  const isExistingAccount = !account.isNewProspect;
+  return {
+    creditApp: isExistingAccount && account.creditTerms !== 'Prepaid',
+    db: isExistingAccount && account.creditTerms !== 'Prepaid',
+    contract: isExistingAccount && account.stage !== 'CustomerInquiry',
+    rateAgreement: rateAgreement || 'Contract',
+    fuelAgreement: fuelAgreement ?? (isExistingAccount && account.prefCommMethod === 'EDI'),
+    accessorialAgreement: accessorialAgreement ?? false,
+    folderCreated: isExistingAccount,
+    filesUploaded: account.documents.some((document) => document.type === 'SOP Document'),
+    internalMeetingDate,
+    externalMeetingDate,
+    summaryEmailSent: isExistingAccount && (account.stage === 'OngoingSupport' || account.stage === 'OperationalKickoff'),
+    auditCompleted: !!account.auditChecklistCompleted,
+    workOrderReceived: isExistingAccount && account.stage === 'OngoingSupport',
+    onboardingCallCompleted: isExistingAccount && (account.stage === 'OngoingSupport' || account.stage === 'OperationalKickoff'),
+    notes: notes ?? (isExistingAccount
+      ? `Review process completed. Account is currently on stage: ${account.stage}. Credit terms approved at ${account.creditTerms}.`
+      : ''),
+    completedBy,
+    completedDate
+  };
+}
+
+/**
+ * Returns the persisted checklist state when available, otherwise derives generic defaults for a prospect or existing account.
+ */
+export function initializeChecklist(account: Account): ChecklistState {
+  return account.checklistState || buildDefaultChecklist({ account });
+}
 /**
  * Computes the workflow pipeline stage implied by agreement, setup, document, kickoff, and work-order checklist state.
  */

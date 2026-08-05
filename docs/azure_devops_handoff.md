@@ -47,3 +47,7 @@ Once the Azure infrastructure is provisioned, the React codebase will need the f
 3. **`src/components/SecureDocumentUploader.tsx`**:
    - Replace the `uploadDocumentToSupabase` import with an Azure-equivalent function.
    - You will need to implement a mechanism to fetch short-lived **Shared Access Signature (SAS) tokens** from the backend to allow the frontend to upload PDFs directly to Azure Blob Storage securely.
+
+## Security remediation update (2026-08-05)
+
+`azure-setup.sh` no longer contains a sample database password and no longer opens PostgreSQL Flexible Server to `0.0.0.0`. Automation must provide `DB_ADMIN_PASSWORD`, `POSTGRES_ALLOWED_START_IP`, and `POSTGRES_ALLOWED_END_IP` from approved secret/configuration sources before running the script. The public IP range is a migration-safe interim control; production should use private endpoint/VNet integration after DevOps confirms the Azure network architecture.

@@ -41,7 +41,7 @@ const SUPABASE_REF = (import.meta.env.VITE_SUPABASE_URL || '').replace('https://
 /**
  * Renders the primary onboarding CRM shell and wires account selection, persistence, and tab navigation.
  */
-export default function App() {
+function MainApp() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
 
@@ -417,6 +417,20 @@ export default function App() {
         </div>
       </footer>
 
+    </div>
+  );
+}
+
+function ConfigErrorScreen() {
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="max-w-lg rounded-2xl border border-red-200 bg-white p-8 shadow-sm text-center">
+        <AlertOctagon className="mx-auto mb-4 h-10 w-10 text-red-600" />
+        <h1 className="text-xl font-bold text-slate-900">Supabase configuration required</h1>
+        <p className="mt-3 text-sm text-slate-600">
+          Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the frontend environment before starting the onboarding CRM.
+        </p>
+      </div>
     </div>
   );
 }

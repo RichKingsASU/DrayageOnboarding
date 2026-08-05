@@ -35,3 +35,16 @@ test('document validation rejects disallowed MIME types even when extension is a
   const file = new File(['<script>alert(1)</script>'], 'fake.pdf', { type: 'text/html' });
   assert.throws(() => validateDocumentFile(file), /Unsupported MIME type/);
 });
+
+test('normalized document uses canonical checklist mapping', async () => {
+  const { normalizeDocument } = await import('../src/lib/supabaseClient');
+  const document = normalizeDocument({
+    id: 'doc-id',
+    name: 'credit.pdf',
+    type: 'Credit Application',
+    uploaded_at: '2026-08-05',
+    size_bytes: 1024,
+    storage_path: 'account/credit.pdf',
+  });
+  assert.equal(document.checklistItemKey, 'creditApp');
+});

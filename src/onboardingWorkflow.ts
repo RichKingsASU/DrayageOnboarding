@@ -4,15 +4,9 @@
  * Dependencies: Shared domain types plus onboarding rule helpers.
  * Maintainer note: Document type mappings must stay consistent with database checklist constraints.
  */
-import { Account, ChecklistState, OnboardingDocument } from './types';
+import { Account } from './types';
 import { computeAccountStage, initializeChecklist } from './onboardingRules';
-
-/** Maps upload document types to the checklist fields they automatically complete. */
-export const DOCUMENT_CHECKLIST_ITEM_BY_TYPE: Partial<Record<OnboardingDocument['type'], keyof ChecklistState>> = {
-  'SOP Document': 'filesUploaded',
-  'Credit Application': 'creditApp',
-  'Liability Agreement': 'contract'
-};
+import { DOCUMENT_CHECKLIST_ITEM_BY_TYPE } from './documentChecklistMapping';
 
 /**
  * Creates a new customer-inquiry account with blank onboarding fields and an optional manually entered Bill-to Code.

@@ -58,3 +58,33 @@ test('removing final qualifying SOP document marks checklist incomplete, but one
   const noneRemaining = reconcileDocumentChecklist({ ...oneRemaining, documents: [] });
   assert.equal(noneRemaining.checklistState?.filesUploaded, false);
 });
+
+test('generic checklist defaults do not branch on demo account IDs', async () => {
+  const { initializeChecklist } = await import('../src/onboardingRules');
+  const base = createBlankOnboardingAccount('arbitrary_customer', 'Arbitrary Customer');
+  const renamedDemoId = { ...base, id: 'act_1' };
+  assert.deepEqual(initializeChecklist(base), initializeChecklist(renamedDemoId));
+});
+
+test('demo fixture data supplies seeded checklist metadata outside generic rules', async () => {
+  const { INITIAL_ACCOUNTS } = await import('../src/mockData');
+  const demoAccount = INITIAL_ACCOUNTS.find((account) => account.id === 'act_amazon');
+  assert.equal(demoAccount?.checklistState?.rateAgreement, 'Tariff');
+  assert.equal(demoAccount?.checklistState?.completedBy, 'Demo Pricing Specialist');
+  assert.equal(demoAccount?.checklistState?.completedDate, '2026-06-19');
+});
+
+test('document checklist mapping covers supported mapped document types', async () => {
+  const { DOCUMENT_CHECKLIST_ITEM_BY_TYPE } = await import('../src/documentChecklistMapping');
+  assert.deepEqual(DOCUMENT_CHECKLIST_ITEM_BY_TYPE, {
+    'SOP Document': 'filesUploaded',
+    'Credit Application': 'creditApp',
+    'Liability Agreement': 'contract',
+  });
+});
+
+test('generic onboarding rules source contains no known demo account branching or fixed seed dates', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../src/onboardingRules.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /act_amazon|act_1|act_2|Tanya Wahl|2026-06-19/);
+});

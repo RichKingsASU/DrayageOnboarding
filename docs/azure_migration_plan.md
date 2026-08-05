@@ -52,3 +52,7 @@ Migrate the existing PostgreSQL database, real-time WebSocket subscriptions, fil
 1. Do you want to use **Microsoft Entra ID (Azure AD)** for user logins, or a different identity provider?
 2. Shall I use the **Data API builder** to keep the backend serverless, or would you prefer a custom Express/Node API hosted on Azure App Service?
 3. Would you like to provision these Azure resources via Azure CLI scripts, or Terraform?
+
+## Provisioning security note (2026-08-05)
+
+The draft Azure provisioning script requires an externally supplied database administrator password and an explicit PostgreSQL firewall allow-list range. Do not use unrestricted public access. Treat private endpoint/VNet integration as the recommended production target once subscription, VNet, DNS, and CI runner egress decisions are finalized.
