@@ -11,26 +11,32 @@ import {
   INITIAL_CONTACTS, 
   INITIAL_ACCESSORIALS 
 } from './mockData';
-import { accountUpdatePayload, supabase } from './lib/supabaseClient';
+import { accountUpdatePayload, supabase, isSuabaseConfigured } from './lib/supabaseClient';
 import { useAccounts } from './hooks/useAccounts';
+import { AuthProvider, useAuth } from './hooks/useAuth';
+import Login from './components/Login';
 import { createBlankOnboardingAccount } from './onboardingWorkflow';
 import KanbanBoard from './components/KanbanBoard';
 import CustomerDashboard from './components/CustomerDashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { 
   Building2, 
   UserSquare2, 
   Layers, 
   RefreshCw,
   Star,
-  FileCheck2,
-  ShieldCheck,
-  Compass,
-  FileSpreadsheet
+  Loader2,
+  AlertOctagon,
+  WifiOff,
+  Wifi,
+  FlaskConical
 } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY_ACTS = 'drayage_onboarding_accounts_v2';
-const LOCAL_STORAGE_KEY_CONS = 'drayage_onboarding_contacts_v2';
-const LOCAL_STORAGE_KEY_ACC = 'drayage_onboarding_access_v2';
+const BUILD_COMMIT = import.meta.env.VITE_COMMIT_SHA || 'dev';
+const BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
+const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'required';
+const SUPABASE_REF = (import.meta.env.VITE_SUPABASE_URL || '').replace('https://', '').split('.')[0] || 'unknown';
 
 /**
  * Renders the primary onboarding CRM shell and wires account selection, persistence, and tab navigation.
@@ -39,7 +45,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
 
-  const { accounts, accessorials: syncedAccessorials, loading, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
+  const { accounts, accessorials: syncedAccessorials, loading, error: accountsError, isRealtimeConnected, retry: retryAccounts, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
+  const { session, signOut } = useAuth();
 
   // For the demo, we still use local state for contacts and accessorials,
   // but they could be populated from the nested accounts data.
@@ -129,8 +136,30 @@ export default function App() {
     setContacts(prev => prev.filter(c => c.id !== contactId));
   };
 
-  const handleUpdateAccessorials = (updatedSOP: AccessorialSOP) => {
+  const handleUpdateAccessorials = async (updatedSOP: AccessorialSOP) => {
     setAccessorials(prev => prev.map(s => s.accountId === updatedSOP.accountId ? updatedSOP : s));
+    if (!updatedSOP.id.startsWith('acc_')) {
+      const payload = {
+        chassis_fee: updatedSOP.chassisFee,
+        pre_pull_fee: updatedSOP.prePullFee,
+        storage_fee: updatedSOP.storageFee,
+        empty_storage_fee: updatedSOP.emptyStorageFee,
+        detention_rate: updatedSOP.detentionRate,
+        detention_free_time: updatedSOP.detentionFreeTime,
+        chassis_split_fee: updatedSOP.chassisSplitFee,
+        clean_truck_fee: updatedSOP.cleanTruckFee,
+        appointment_type: updatedSOP.appointmentType,
+        required_status_updates: updatedSOP.requiredStatusUpdates,
+        has_yard_hostler: updatedSOP.hasYardHostler,
+        peel_piles_permitted: updatedSOP.peelPilesPermitted,
+        private_chassis_permitted: updatedSOP.privateChassisPermitted,
+        free_time_days: updatedSOP.freeTimeDays,
+        delivery_rules: updatedSOP.deliveryRules,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await supabase.from('accessorial_sops').update(payload).eq('id', updatedSOP.id);
+      if (error) console.error('Failed to persist SOP update:', error);
+    }
   };
 
   return (
@@ -225,6 +254,27 @@ export default function App() {
         </button>
       </div>
 
+      {/* Service Status Bar */}
+      {(accountsError || !isRealtimeConnected) && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
+          <div className="max-w-7xl mx-auto flex flex-wrap gap-3 items-center text-xs font-medium text-amber-700">
+            {accountsError && (
+              <span className="flex items-center gap-1.5">
+                <AlertOctagon className="w-3.5 h-3.5" />
+                Customer data temporarily unavailable.
+                <button onClick={retryAccounts} className="underline hover:no-underline">Retry</button>
+              </span>
+            )}
+            {!isRealtimeConnected && !loading && (
+              <span className="flex items-center gap-1.5">
+                <WifiOff className="w-3.5 h-3.5" />
+                Live updates temporarily unavailable. Refresh to see latest changes.
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* PRESENTATION PLAYBOOK FLOATER PANEL */}
       {showWalkthrough && (
         <section className="bg-blue-50/80 border-b border-blue-200 px-4 py-3 text-slate-900 shadow-inner">
@@ -318,17 +368,19 @@ export default function App() {
           )}
 
           {activeTab === 'dashboard' && (
-            <CustomerDashboard
-              accounts={accounts}
-              contacts={contacts}
-              accessorials={accessorials}
-              selectedAccountId={selectedAccountId}
-              onSelectAccount={setSelectedAccountId}
-              onUpdateAccount={handleUpdateAccount}
-              onAddContact={handleAddContact}
-              onDeleteContact={handleDeleteContact}
-              onUpdateAccessorials={handleUpdateAccessorials}
-            />
+            <ErrorBoundary fallbackTitle="Customer 360 could not be displayed">
+              <CustomerDashboard
+                accounts={accounts}
+                contacts={contacts}
+                accessorials={accessorials}
+                selectedAccountId={selectedAccountId}
+                onSelectAccount={setSelectedAccountId}
+                onUpdateAccount={handleUpdateAccount}
+                onAddContact={handleAddContact}
+                onDeleteContact={handleDeleteContact}
+                onUpdateAccessorials={handleUpdateAccessorials}
+              />
+            </ErrorBoundary>
           )}
         </div>
 
@@ -338,16 +390,119 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 py-6 mt-12 shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-medium gap-4">
           <p>© 2026 Forrest Logistics Drayage Customer Onboarding CRM. Managed by Tanya Wahl.</p>
-          <div className="flex gap-4">
-            <span className="hover:underline cursor-pointer">Security & Credit Audit Protocol</span>
+          <div className="flex gap-4 items-center flex-wrap">
+            <span className="hover:underline cursor-pointer">Security &amp; Credit Audit Protocol</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer">Terminal SOP Rules</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer" onClick={() => setShowWalkthrough(true)}>Show Demonstration Guide</span>
           </div>
         </div>
+        {/* Build diagnostics */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-400 font-mono">
+          <span>ENV: {APP_ENV}</span>
+          <span>·</span>
+          <span>AUTH: {AUTH_MODE}</span>
+          <span>·</span>
+          <span>PROJECT: {SUPABASE_REF}</span>
+          <span>·</span>
+          <span>COMMIT: {BUILD_COMMIT.slice(0, 8)}</span>
+          <span>·</span>
+          <span>BUILT: {BUILD_TIME.split('T')[0]}</span>
+          <span>·</span>
+          <span className={`flex items-center gap-1 ${isRealtimeConnected ? 'text-green-500' : 'text-slate-400'}`}>
+            {isRealtimeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+            Realtime
+          </span>
+        </div>
       </footer>
 
     </div>
+  );
+}
+
+export default function App() {
+  // Gate the entire app on Supabase configuration being present.
+  if (!isSuabaseConfigured) {
+    return <ConfigErrorScreen />;
+  }
+
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated, isInitializing, isAutoAuthenticating, authMode, error, retry } = useAuth();
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-slate-500">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-sm font-medium">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAutoAuthenticating) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-slate-500">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-sm font-medium">Preparing the OnDray staging workspace…</p>
+          <p className="text-xs text-slate-400">Creating secure demo workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && authMode === 'auto_demo') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center space-y-4">
+          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+            <AlertOctagon className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-900">Unable to prepare the staging workspace</h2>
+          <p className="text-sm text-slate-500">{error.message}</p>
+          <button 
+            onClick={retry}
+            className="w-full bg-slate-900 text-white font-medium py-2 rounded-lg hover:bg-slate-800 transition"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    if (authMode === 'auto_demo') {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div className="text-center space-y-4">
+             <p className="text-slate-600">Failed to establish demo session.</p>
+             <button onClick={retry} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Retry</button>
+          </div>
+        </div>
+      );
+    }
+    return <Login />;
+  }
+
+  return (
+    <ErrorBoundary fallbackTitle="Application error — please reload">
+      {authMode === 'auto_demo' && (
+        <div className="bg-amber-300 text-amber-900 text-xs font-bold text-center py-1.5 flex items-center justify-center gap-2">
+          <FlaskConical className="w-3.5 h-3.5" />
+          Staging Demo — Synthetic Data Only — Not for Production Use
+        </div>
+      )}
+      <MainApp />
+    </ErrorBoundary>
   );
 }

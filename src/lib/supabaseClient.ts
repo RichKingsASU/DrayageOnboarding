@@ -11,9 +11,8 @@ const runtimeEnv = (typeof import.meta !== 'undefined' && import.meta.env) || pr
 const supabaseUrl = runtimeEnv.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = runtimeEnv.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase Environment Variables');
-}
+/** True when required env vars are present. Check before rendering protected UI. */
+export const isSuabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 const realtimeTransport = typeof WebSocket === 'undefined'
   ? class TestWebSocket {
@@ -175,8 +174,9 @@ export async function uploadDocumentToSupabase(
 ) {
   validateDocumentFile(file);
   const checklistItemKey = DOCUMENT_CHECKLIST_ITEM_BY_TYPE[docType] || null;
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const filePath = `${accountId}/${docType}/${Date.now()}_${safeName}`;
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  const categorySlug = docType.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+  const filePath = `${accountId}/${categorySlug}/${crypto.randomUUID()}.${extension}`;
 
   // 1. Upload to Supabase Storage
   const { data: storageData, error: storageError } = await supabase.storage
