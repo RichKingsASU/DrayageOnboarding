@@ -17,8 +17,8 @@ DECLARE
   doc_b UUID := 'dddddddd-bbbb-bbbb-bbbb-dddddddddddd'::UUID;
 BEGIN
   -- Insert dummy test accounts circumventing RLS by using postgres superuser
-  INSERT INTO public.accounts (id, name, organization_id) VALUES (act_a, 'Account A', uid_a);
-  INSERT INTO public.accounts (id, name, organization_id) VALUES (act_b, 'Account B', uid_b);
+  INSERT INTO public.accounts (id, legal_name, organization_id) VALUES (act_a, 'Account A', uid_a);
+  INSERT INTO public.accounts (id, legal_name, organization_id) VALUES (act_b, 'Account B', uid_b);
   
   -- Insert dummy test docs
   INSERT INTO public.documents (id, account_id, type, url, name) VALUES (doc_a, act_a, 'Other', 'url1', 'doc_a.pdf');
@@ -37,7 +37,7 @@ SELECT is_empty(
   'anon should not be able to read documents'
 );
 SELECT throws_ok(
-  'INSERT INTO public.accounts (name, organization_id) VALUES (''Hacked'', ''33333333-3333-3333-3333-333333333333'')',
+  'INSERT INTO public.accounts (legal_name, organization_id) VALUES (''Hacked'', ''33333333-3333-3333-3333-333333333333'')',
   'new row violates row-level security policy for table "accounts"',
   'anon should not be able to insert accounts'
 );
@@ -63,12 +63,12 @@ SELECT results_eq(
 );
 
 SELECT lives_ok(
-  'INSERT INTO public.accounts (id, name, organization_id) VALUES (''cccccccc-cccc-cccc-cccc-cccccccccccc'', ''User A new'', ''11111111-1111-1111-1111-111111111111'')',
+  'INSERT INTO public.accounts (id, legal_name, organization_id) VALUES (''cccccccc-cccc-cccc-cccc-cccccccccccc'', ''User A new'', ''11111111-1111-1111-1111-111111111111'')',
   'User A can insert account if organization_id matches uid'
 );
 
 SELECT throws_ok(
-  'INSERT INTO public.accounts (id, name, organization_id) VALUES (''eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'', ''User A hack'', ''22222222-2222-2222-2222-222222222222'')',
+  'INSERT INTO public.accounts (id, legal_name, organization_id) VALUES (''eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'', ''User A hack'', ''22222222-2222-2222-2222-222222222222'')',
   'new row violates row-level security policy for table "accounts"',
   'User A cannot insert account for User B'
 );
@@ -150,7 +150,7 @@ SELECT lives_ok(
 );
 
 SELECT results_eq(
-  'SELECT name FROM public.accounts WHERE organization_id = ''99999999-9999-9999-9999-999999999999''',
+  'SELECT legal_name FROM public.accounts WHERE organization_id = ''99999999-9999-9999-9999-999999999999''',
   $$VALUES ('OnDray Demo Customer')$$,
   'Demo workspace correctly provisions account'
 );
