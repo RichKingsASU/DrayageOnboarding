@@ -1,77 +1,95 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # File: azure-setup.sh
 # Purpose: Provisions draft Azure resources for the DrayageOnboarding migration path.
 # Dependencies: Azure CLI, PostgreSQL Flexible Server, Blob Storage, and Azure Web PubSub.
-# Maintainer note: Contains security-sensitive defaults flagged for DevOps review before production use.
-# azure-setup.sh
-# Provisioning script for DrayageOnboarding Azure Migration
+# Maintainer note: Requires caller-supplied secrets and network allow-list inputs; it does not print secrets.
 
-RESOURCE_GROUP="rg-drayage-onboarding"
-LOCATION="eastus"
-DB_SERVER_NAME="psql-drayage-server-$RANDOM"
-DB_NAME="drayage_db"
-DB_ADMIN_USER="drayageadmin"
-DB_ADMIN_PASSWORD="SuperSecurePassword123!" # Change before running in prod
-STORAGE_ACCOUNT="stdrayagevault$RANDOM"
-STORAGE_CONTAINER="drayage-vault"
-PUBSUB_NAME="pubsub-drayage-sync-$RANDOM"
+set -euo pipefail
 
-echo "🚀 Starting Azure Infrastructure Provisioning..."
+RESOURCE_GROUP="${RESOURCE_GROUP:-rg-drayage-onboarding}"
+LOCATION="${LOCATION:-eastus}"
+DB_SERVER_NAME="${DB_SERVER_NAME:-psql-drayage-server-$RANDOM}"
+DB_NAME="${DB_NAME:-drayage_db}"
+DB_ADMIN_USER="${DB_ADMIN_USER:-drayageadmin}"
+STORAGE_ACCOUNT="${STORAGE_ACCOUNT:-stdrayagevault$RANDOM}"
+STORAGE_CONTAINER="${STORAGE_CONTAINER:-drayage-vault}"
+PUBSUB_NAME="${PUBSUB_NAME:-pubsub-drayage-sync-$RANDOM}"
 
-# 1. Create Resource Group
-echo "📦 Creating Resource Group: $RESOURCE_GROUP"
-az group create --name $RESOURCE_GROUP --location $LOCATION
+require_env() {
+  local name="$1"
+  if [[ -z "${!name:-}" ]]; then
+    printf 'Missing required environment variable: %s\n' "$name" >&2
+    exit 1
+  fi
+}
 
-# 2. Provision Azure Database for PostgreSQL (Flexible Server)
-echo "🗄️ Provisioning Azure Database for PostgreSQL..."
+validate_ipv4() {
+  local name="$1"
+  local value="${!name:-}"
+  if [[ ! "$value" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    printf 'Invalid IPv4 address in %s. Azure PostgreSQL public-access rules require start and end IPv4 addresses.\n' "$name" >&2
+    exit 1
+  fi
+}
+
+require_env DB_ADMIN_PASSWORD
+require_env POSTGRES_ALLOWED_START_IP
+require_env POSTGRES_ALLOWED_END_IP
+validate_ipv4 POSTGRES_ALLOWED_START_IP
+validate_ipv4 POSTGRES_ALLOWED_END_IP
+
+printf 'Starting Azure infrastructure provisioning.\n'
+printf 'Using resource group: %s\n' "$RESOURCE_GROUP"
+
+printf 'Creating or updating resource group.\n'
+az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
+
+printf 'Provisioning Azure Database for PostgreSQL Flexible Server.\n'
+printf 'PostgreSQL public access is restricted to the caller-supplied allow-list range; unrestricted 0.0.0.0 access is prohibited.\n'
 az postgres flexible-server create \
-  --resource-group $RESOURCE_GROUP \
-  --name $DB_SERVER_NAME \
-  --location $LOCATION \
-  --admin-user $DB_ADMIN_USER \
-  --admin-password $DB_ADMIN_PASSWORD \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$DB_SERVER_NAME" \
+  --location "$LOCATION" \
+  --admin-user "$DB_ADMIN_USER" \
+  --admin-password "$DB_ADMIN_PASSWORD" \
   --sku-name Standard_B1ms \
   --tier Burstable \
-  --public-access 0.0.0.0 \
-  --database-name $DB_NAME
+  --public-access "$POSTGRES_ALLOWED_START_IP-$POSTGRES_ALLOWED_END_IP" \
+  --database-name "$DB_NAME" \
+  --output none
 
-# 3. Provision Azure Storage Account for the Document Vault
-echo "📂 Provisioning Azure Storage Account..."
+printf 'Provisioning Azure Storage Account.\n'
 az storage account create \
-  --name $STORAGE_ACCOUNT \
-  --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
+  --name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --location "$LOCATION" \
   --sku Standard_LRS \
-  --allow-blob-public-access false
+  --allow-blob-public-access false \
+  --output none
 
-# Get Storage Account Key
-STORAGE_KEY=$(az storage account keys list -g $RESOURCE_GROUP -n $STORAGE_ACCOUNT --query "[0].value" -o tsv)
+STORAGE_KEY="$(az storage account keys list -g "$RESOURCE_GROUP" -n "$STORAGE_ACCOUNT" --query '[0].value' -o tsv)"
 
-# Create Blob Container
-echo "🔒 Creating Private Blob Container: $STORAGE_CONTAINER"
+printf 'Creating private Blob container.\n'
 az storage container create \
-  --name $STORAGE_CONTAINER \
-  --account-name $STORAGE_ACCOUNT \
-  --account-key $STORAGE_KEY \
-  --public-access off
+  --name "$STORAGE_CONTAINER" \
+  --account-name "$STORAGE_ACCOUNT" \
+  --account-key "$STORAGE_KEY" \
+  --public-access off \
+  --output none >/dev/null
 
-# 4. Provision Azure Web PubSub for Real-Time Synchronization
-echo "⚡ Provisioning Azure Web PubSub Service..."
+printf 'Provisioning Azure Web PubSub Service.\n'
 az webpubsub create \
-  --name $PUBSUB_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
-  --sku Free_F1
+  --name "$PUBSUB_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --location "$LOCATION" \
+  --sku Free_F1 \
+  --output none
 
-# Get PubSub Connection String
-PUBSUB_CONN_STRING=$(az webpubsub key show --name $PUBSUB_NAME --resource-group $RESOURCE_GROUP --query primaryConnectionString -o tsv)
-
-echo "✅ Azure Infrastructure Provisioning Complete!"
-echo "------------------------------------------------------"
-echo "POSTGRES_SERVER: $DB_SERVER_NAME.postgres.database.azure.com"
-echo "POSTGRES_DB: $DB_NAME"
-echo "STORAGE_ACCOUNT: $STORAGE_ACCOUNT"
-echo "PUBSUB_NAME: $PUBSUB_NAME"
-echo "------------------------------------------------------"
-echo "Next Steps: Run 'dab start' to boot the Data API builder locally connecting to this Postgres instance."
+printf 'Azure infrastructure provisioning complete.\n'
+printf 'POSTGRES_SERVER: %s.postgres.database.azure.com\n' "$DB_SERVER_NAME"
+printf 'POSTGRES_DB: %s\n' "$DB_NAME"
+printf 'STORAGE_ACCOUNT: %s\n' "$STORAGE_ACCOUNT"
+printf 'STORAGE_CONTAINER: %s\n' "$STORAGE_CONTAINER"
+printf 'PUBSUB_NAME: %s\n' "$PUBSUB_NAME"
+printf 'Next step: configure Data API Builder with secret-managed connection strings.\n'

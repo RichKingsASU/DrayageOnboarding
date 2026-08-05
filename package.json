@@ -1,7 +1,7 @@
 {
-  "name": "react-example",
+  "name": "drayage-onboarding-crm",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -12,15 +12,14 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:demo": "cross-env VITE_AUTH_MODE=auto_demo playwright test",
-    "test:e2e:prod": "cross-env VITE_AUTH_MODE=required playwright test"
+    "test:e2e:prod": "cross-env VITE_AUTH_MODE=required playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
     "@supabase/supabase-js": "^2.112.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
-    "express": "^4.21.2",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.1",
@@ -29,7 +28,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
     "cross-env": "^10.1.0",

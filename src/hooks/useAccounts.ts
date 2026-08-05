@@ -4,7 +4,7 @@
  * Dependencies: React hooks, Supabase client helpers, and shared account/SOP types.
  * Maintainer note: Realtime updates trigger debounced refetches to keep related records consistent.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { normalizeAccount, normalizeSOP, supabase } from '../lib/supabaseClient';
 import { Account, AccessorialSOP } from '../types';
 import { useAuth } from './useAuth';

@@ -1,8 +1,6 @@
 {
   "name": "Drayage Customer Onboarding CRM",
-  "description": "Comprehensive Customer Onboarding CRM for drayage brokerages: featuring 5 pipeline stages, automated compliance audit checklists, document vault & upload preview, red flag SOP alerts, and 360-degree customer intelligence.",
+  "description": "Customer onboarding CRM for drayage brokerages with pipeline tracking, compliance checklists, secure document upload workflows, and Supabase-backed local validation.",
   "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "majorCapabilities": []
 }
