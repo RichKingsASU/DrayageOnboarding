@@ -1,14 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 import { Account, AccessorialSOP, ChecklistState, OnboardingDocument } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const runtimeEnv = (typeof import.meta !== 'undefined' && import.meta.env) || process.env;
+const supabaseUrl = runtimeEnv.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = runtimeEnv.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase Environment Variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const realtimeTransport = typeof WebSocket === 'undefined'
+  ? class TestWebSocket {
+      constructor() {
+        throw new Error('Realtime WebSocket transport is unavailable in this environment.');
+      }
+    }
+  : WebSocket;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  realtime: { transport: realtimeTransport as any }
+});
 
 export const DOCUMENT_MAX_BYTES = 15 * 1024 * 1024;
 export const DOCUMENT_ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'] as const;
@@ -18,6 +29,14 @@ export const DOCUMENT_CHECKLIST_ITEM_BY_TYPE: Partial<Record<OnboardingDocument[
   'Liability Agreement': 'contract'
 };
 
+export const DOCUMENT_ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/png',
+  'image/jpeg'
+] as const;
+
 export function validateDocumentFile(file: File) {
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
   if (!DOCUMENT_ALLOWED_EXTENSIONS.includes(extension as any)) {
@@ -26,7 +45,11 @@ export function validateDocumentFile(file: File) {
   if (file.size > DOCUMENT_MAX_BYTES) {
     throw new Error('File is too large. Maximum supported upload size is 15MB.');
   }
+  if (file.type && !DOCUMENT_ALLOWED_MIME_TYPES.includes(file.type as any)) {
+    throw new Error('Unsupported MIME type for this document.');
+  }
 }
+
 
 export function normalizeDocument(row: any): OnboardingDocument {
   return {
@@ -111,7 +134,6 @@ export function accountUpdatePayload(account: Account) {
     stage: account.stage,
     bill_to_code_created: !!account.billToCodeCreated,
     audit_checklist_completed: !!account.auditChecklistCompleted,
-    checklist_state: account.checklistState || null,
     updated_at: new Date().toISOString()
   };
 }
@@ -149,7 +171,10 @@ export async function uploadDocumentToSupabase(
     .select()
     .single();
 
-  if (dbError) throw dbError;
+  if (dbError) {
+    await supabase.storage.from('drayage-vault').remove([storageData.path]);
+    throw dbError;
+  }
 
   return docRecord;
 }
