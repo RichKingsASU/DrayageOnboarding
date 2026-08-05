@@ -28,17 +28,19 @@ END $$;
 -- 1. Anonymous Access Tests
 SET ROLE anon;
 
-SELECT is_empty(
+SELECT throws_ok(
   'SELECT id FROM public.accounts',
+  'permission denied for table accounts',
   'anon should not be able to read accounts'
 );
-SELECT is_empty(
+SELECT throws_ok(
   'SELECT id FROM public.documents',
+  'permission denied for table documents',
   'anon should not be able to read documents'
 );
 SELECT throws_ok(
   'INSERT INTO public.accounts (legal_name, organization_id) VALUES (''Hacked'', ''33333333-3333-3333-3333-333333333333'')',
-  'new row violates row-level security policy for table "accounts"',
+  'permission denied for table accounts',
   'anon should not be able to insert accounts'
 );
 
@@ -109,27 +111,28 @@ SELECT throws_ok(
 RESET ROLE;
 SET ROLE anon;
 
-SELECT is_empty(
+SELECT throws_ok(
   'SELECT name FROM storage.objects WHERE bucket_id = ''drayage-vault''',
+  'permission denied for table objects',
   'anon should not see any storage objects'
 );
 
 SELECT throws_ok(
   'INSERT INTO storage.objects (bucket_id, name) VALUES (''drayage-vault'', ''aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/Other/anon.pdf'')',
-  'new row violates row-level security policy for table "objects"',
+  'permission denied for table objects',
   'anon cannot upload storage objects'
 );
 
 SELECT throws_ok(
   'DELETE FROM storage.objects WHERE bucket_id = ''drayage-vault'' AND name = ''aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/Other/foo.pdf''',
-  'new row violates row-level security policy for table "objects"',
+  'permission denied for table objects',
   'anon cannot delete storage objects'
 );
 
 -- Check update policy restrictions for anon
 SELECT throws_ok(
   'UPDATE storage.objects SET name = ''hacked'' WHERE bucket_id = ''drayage-vault'' AND name = ''aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/Other/foo.pdf''',
-  'new row violates row-level security policy for table "objects"',
+  'permission denied for table objects',
   'anon cannot update storage objects'
 );
 
