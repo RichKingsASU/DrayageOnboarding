@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# File: azure-setup.sh
+# Purpose: Provisions draft Azure resources for the DrayageOnboarding migration path.
+# Dependencies: Azure CLI, PostgreSQL Flexible Server, Blob Storage, and Azure Web PubSub.
+# Maintainer note: Contains security-sensitive defaults flagged for DevOps review before production use.
 # azure-setup.sh
 # Provisioning script for DrayageOnboarding Azure Migration
 

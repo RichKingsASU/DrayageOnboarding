@@ -1,8 +1,17 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+/**
+ * File: useAccounts.ts
+ * Purpose: Loads onboarding accounts/SOPs and keeps account state synchronized through Supabase realtime events.
+ * Dependencies: React hooks, Supabase client helpers, and shared account/SOP types.
+ * Maintainer note: Realtime updates trigger debounced refetches to keep related records consistent.
+ */
+import { useEffect, useRef, useState } from 'react';
 import { normalizeAccount, normalizeSOP, supabase } from '../lib/supabaseClient';
 import { Account, AccessorialSOP } from '../types';
 import { useAuth } from './useAuth';
 
+/**
+ * Fetches onboarding accounts/accessorial SOPs and subscribes to Supabase realtime account changes.
+ */
 export function useAccounts() {
   const { session } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);

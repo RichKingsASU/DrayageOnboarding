@@ -1,3 +1,9 @@
+/**
+ * File: test_workflow.ts
+ * Purpose: Provides a manual Supabase workflow smoke test for account insertion, storage upload, and document metadata.
+ * Dependencies: Supabase JavaScript client, dotenv, Node filesystem/path/crypto modules, and local Supabase env values.
+ * Maintainer note: Contains security-sensitive test credentials flagged for review before handoff.
+ */
 import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';

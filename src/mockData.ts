@@ -1,3 +1,9 @@
+/**
+ * File: mockData.ts
+ * Purpose: Provides seed/demo onboarding accounts, contacts, and accessorial SOP records for local fallback use.
+ * Dependencies: Shared TypeScript domain types from types.ts.
+ * Maintainer note: Data reflects business scenarios and should not be treated as production customer records.
+ */
 import { Account, Contact, Lane, AccessorialSOP } from './types';
 
 export const INITIAL_ACCOUNTS: Account[] = [

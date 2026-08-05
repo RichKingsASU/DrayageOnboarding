@@ -1,4 +1,10 @@
-import React, { useState } from 'react';
+/**
+ * File: App.tsx
+ * Purpose: Coordinates the top-level onboarding CRM experience and shared account state.
+ * Dependencies: React state/effects, Supabase persistence, local storage fallback data, and dashboard/Kanban components.
+ * Maintainer note: UI state is hydrated from Supabase first, with mock/local data retained as a fallback path.
+ */
+import React, { useState, useEffect } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage } from './types';
 import { 
   INITIAL_ACCOUNTS, 
@@ -32,30 +38,10 @@ const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
 const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'required';
 const SUPABASE_REF = (import.meta.env.VITE_SUPABASE_URL || '').replace('https://', '').split('.')[0] || 'unknown';
 
-
-// ─── Configuration Error Screen ───────────────────────────────────────────────
-function ConfigErrorScreen() {
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-md w-full text-center space-y-4">
-        <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
-          <AlertOctagon className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-semibold text-slate-900">Staging configuration is incomplete</h2>
-        <p className="text-sm text-slate-500">
-          The application cannot connect to its data services.<br/>
-          <code className="text-xs bg-slate-100 px-1 rounded">VITE_SUPABASE_URL</code> or{' '}
-          <code className="text-xs bg-slate-100 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> is missing.
-        </p>
-        <p className="text-xs text-slate-400">Contact the deployment team to set the correct environment variables in Netlify and redeploy.</p>
-        <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white font-medium py-2 rounded-lg hover:bg-slate-800 transition">Retry</button>
-      </div>
-    </div>
-  );
-}
-
-
-function MainApp() {
+/**
+ * Renders the primary onboarding CRM shell and wires account selection, persistence, and tab navigation.
+ */
+export default function App() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
 

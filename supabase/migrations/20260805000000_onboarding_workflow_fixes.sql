@@ -1,3 +1,8 @@
+-- File: 20260805000000_onboarding_workflow_fixes.sql
+-- Purpose: Adds onboarding checklist persistence and document-to-checklist linkage fixes to the initial schema.
+-- Dependencies: Existing public.accounts, public.documents, and public.accessorial_sops tables.
+-- Maintainer note: Checklist item keys must remain aligned with frontend ChecklistState keys.
+
 -- Onboarding workflow fixes: optional bill-to codes, checklist state, SOP document linkage.
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS bill_to_code TEXT;
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS checklist_state JSONB DEFAULT '{}'::jsonb;

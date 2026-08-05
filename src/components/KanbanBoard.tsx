@@ -1,3 +1,9 @@
+/**
+ * File: KanbanBoard.tsx
+ * Purpose: Renders the onboarding pipeline board, stage columns, and account cards for workflow navigation.
+ * Dependencies: React, motion animations, lucide-react icons, and onboarding rule helpers.
+ * Maintainer note: Stage display is derived from account checklist data as well as saved account stage values.
+ */
 import React, { useState, useEffect } from 'react';
 import { Account, PipelineStage } from '../types';
 import { computeAccountStage, initializeChecklist } from '../onboardingRules';
@@ -73,6 +79,9 @@ const STAGES: { key: PipelineStage; label: string; color: string; desc: string; 
   }
 ];
 
+/**
+ * Renders the stage-based onboarding board and handles account stage updates, selection, and new-account entry.
+ */
 export default function KanbanBoard({ 
   accounts, 
   onUpdateAccountStage, 

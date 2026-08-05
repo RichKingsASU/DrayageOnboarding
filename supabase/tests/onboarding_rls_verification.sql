@@ -1,3 +1,11 @@
+-- File: onboarding_rls_verification.sql
+-- Purpose: Provides a manual/local pgTAP-style verification script for account-scoped RLS behavior.
+-- Dependencies: Supabase local database, pgTAP plan/assertions, auth.uid() override, and migrated onboarding tables.
+-- Maintainer note: Intended for local verification after `supabase db reset`, not application runtime.
+
+-- Manual/local Supabase verification for account-scoped RLS.
+-- Run after `supabase db reset`
+
 BEGIN;
 SELECT plan(19);
 
