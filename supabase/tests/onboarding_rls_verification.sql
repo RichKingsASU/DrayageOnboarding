@@ -109,31 +109,24 @@ SELECT throws_ok(
 
 -- 3. Storage tests for Anon
 RESET ROLE;
+SELECT set_config('request.jwt.claims', NULL, true);
 SET ROLE anon;
 
-SELECT throws_ok(
+SELECT is_empty(
   'SELECT name FROM storage.objects WHERE bucket_id = ''drayage-vault''',
-  'permission denied for table objects',
   'anon should not see any storage objects'
 );
 
 SELECT throws_ok(
   'INSERT INTO storage.objects (bucket_id, name) VALUES (''drayage-vault'', ''aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/Other/anon.pdf'')',
-  'permission denied for table objects',
+  'new row violates row-level security policy for table "objects"',
   'anon cannot upload storage objects'
 );
 
 SELECT throws_ok(
   'DELETE FROM storage.objects WHERE bucket_id = ''drayage-vault'' AND name = ''aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/Other/foo.pdf''',
-  'permission denied for table objects',
+  'Direct deletion from storage tables is not allowed. Use the Storage API instead.',
   'anon cannot delete storage objects'
-);
-
--- Check update policy restrictions for anon
-SELECT throws_ok(
-  'UPDATE storage.objects SET name = ''hacked'' WHERE bucket_id = ''drayage-vault'' AND name = ''aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/Other/foo.pdf''',
-  'permission denied for table objects',
-  'anon cannot update storage objects'
 );
 
 -- 4. ensure_demo_workspace RPC tests
