@@ -21,8 +21,8 @@ BEGIN
   INSERT INTO public.accounts (id, legal_name, organization_id) VALUES (act_b, 'Account B', uid_b);
   
   -- Insert dummy test docs
-  INSERT INTO public.documents (id, account_id, type, url, name) VALUES (doc_a, act_a, 'Other', 'url1', 'doc_a.pdf');
-  INSERT INTO public.documents (id, account_id, type, url, name) VALUES (doc_b, act_b, 'Other', 'url2', 'doc_b.pdf');
+  INSERT INTO public.documents (id, account_id, type, storage_path, name) VALUES (doc_a, act_a, 'Other', 'url1', 'doc_a.pdf');
+  INSERT INTO public.documents (id, account_id, type, storage_path, name) VALUES (doc_b, act_b, 'Other', 'url2', 'doc_b.pdf');
 END $$;
 
 -- 1. Anonymous Access Tests
@@ -74,7 +74,7 @@ SELECT throws_ok(
 );
 
 SELECT throws_ok(
-  'INSERT INTO public.documents (account_id, type, url, name) VALUES (''bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'', ''Other'', ''u'', ''n'')',
+  'INSERT INTO public.documents (account_id, type, storage_path, name) VALUES (''bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'', ''Other'', ''u'', ''n'')',
   'new row violates row-level security policy for table "documents"',
   'User A cannot insert document for User B account'
 );
