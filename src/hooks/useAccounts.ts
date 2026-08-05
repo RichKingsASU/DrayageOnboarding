@@ -1,19 +1,27 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { normalizeAccount, normalizeSOP, supabase } from '../lib/supabaseClient';
 import { Account, AccessorialSOP } from '../types';
+import { useAuth } from './useAuth';
 
 export function useAccounts() {
+  const { session } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accessorials, setAccessorials] = useState<AccessorialSOP[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
-  // Use a stable channel name so it doesn't change on re-renders, unless we want unique per mount.
-  // Using a stable one for the app scope is usually better.
-  const channelNameRef = useRef(`accounts_realtime_channel`);
+  // Generate a unique channel per hook mount to prevent cleanup collisions
+  const channelNameRef = useRef(`drayage-accounts-${crypto.randomUUID()}`);
 
   const fetchAccounts = useCallback(async () => {
+    if (!session) {
+      setAccounts([]);
+      setAccessorials([]);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     const { data, err } = await supabase
@@ -37,13 +45,17 @@ export function useAccounts() {
       setAccessorials(data.flatMap((row: any) => (row.sops || []).map(normalizeSOP)));
     }
     setLoading(false);
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     let isMounted = true;
     let refetchTimer: ReturnType<typeof setTimeout> | undefined;
 
     fetchAccounts();
+
+    if (!session) {
+      return; // Do not subscribe if unauthenticated
+    }
 
     const scheduleFetchAccounts = () => {
       if (refetchTimer) clearTimeout(refetchTimer);
@@ -52,7 +64,7 @@ export function useAccounts() {
       }, 150);
     };
 
-    // Realtime WebSocket Channel
+    // Realtime WebSocket Channel using a unique name for this hook instance
     const channel = supabase
       .channel(channelNameRef.current)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, scheduleFetchAccounts)
@@ -72,7 +84,7 @@ export function useAccounts() {
       if (refetchTimer) clearTimeout(refetchTimer);
       supabase.removeChannel(channel);
     };
-  }, [fetchAccounts]);
+  }, [fetchAccounts, session]);
 
   return { accounts, accessorials, loading, error, isRealtimeConnected, setAccounts, setAccessorials, retry: fetchAccounts }; 
 }

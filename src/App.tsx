@@ -7,6 +7,8 @@ import {
 } from './mockData';
 import { accountUpdatePayload, supabase } from './lib/supabaseClient';
 import { useAccounts } from './hooks/useAccounts';
+import { AuthProvider, useAuth } from './hooks/useAuth';
+import Login from './components/Login';
 import { createBlankOnboardingAccount } from './onboardingWorkflow';
 import KanbanBoard from './components/KanbanBoard';
 import CustomerDashboard from './components/CustomerDashboard';
@@ -19,18 +21,21 @@ import {
   FileCheck2,
   ShieldCheck,
   Compass,
-  FileSpreadsheet
+  FileSpreadsheet,
+  LogOut,
+  Loader2
 } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_ACTS = 'drayage_onboarding_accounts_v2';
 const LOCAL_STORAGE_KEY_CONS = 'drayage_onboarding_contacts_v2';
 const LOCAL_STORAGE_KEY_ACC = 'drayage_onboarding_access_v2';
 
-export default function App() {
+function MainApp() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
 
-  const { accounts, accessorials: syncedAccessorials, loading, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
+  const { accounts, accessorials: syncedAccessorials, loading, isRealtimeConnected, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
+  const { session, signOut, user } = useAuth();
 
   // For the demo, we still use local state for contacts and accessorials,
   // but they could be populated from the nested accounts data.
@@ -363,4 +368,25 @@ export default function App() {
 
     </div>
   );
+}
+
+export default function App() {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-slate-500">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-sm font-medium">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
+
+  return <MainApp />;
 }

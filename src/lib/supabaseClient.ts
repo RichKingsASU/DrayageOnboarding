@@ -146,8 +146,9 @@ export async function uploadDocumentToSupabase(
 ) {
   validateDocumentFile(file);
   const checklistItemKey = DOCUMENT_CHECKLIST_ITEM_BY_TYPE[docType] || null;
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const filePath = `${accountId}/${docType}/${Date.now()}_${safeName}`;
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  const categorySlug = docType.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+  const filePath = `${accountId}/${categorySlug}/${crypto.randomUUID()}.${extension}`;
 
   // 1. Upload to Supabase Storage
   const { data: storageData, error: storageError } = await supabase.storage
