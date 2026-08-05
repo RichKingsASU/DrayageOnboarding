@@ -120,8 +120,30 @@ export default function App() {
     setContacts(prev => prev.filter(c => c.id !== contactId));
   };
 
-  const handleUpdateAccessorials = (updatedSOP: AccessorialSOP) => {
+  const handleUpdateAccessorials = async (updatedSOP: AccessorialSOP) => {
     setAccessorials(prev => prev.map(s => s.accountId === updatedSOP.accountId ? updatedSOP : s));
+    if (!updatedSOP.id.startsWith('acc_')) {
+      const payload = {
+        chassis_fee: updatedSOP.chassisFee,
+        pre_pull_fee: updatedSOP.prePullFee,
+        storage_fee: updatedSOP.storageFee,
+        empty_storage_fee: updatedSOP.emptyStorageFee,
+        detention_rate: updatedSOP.detentionRate,
+        detention_free_time: updatedSOP.detentionFreeTime,
+        chassis_split_fee: updatedSOP.chassisSplitFee,
+        clean_truck_fee: updatedSOP.cleanTruckFee,
+        appointment_type: updatedSOP.appointmentType,
+        required_status_updates: updatedSOP.requiredStatusUpdates,
+        has_yard_hostler: updatedSOP.hasYardHostler,
+        peel_piles_permitted: updatedSOP.peelPilesPermitted,
+        private_chassis_permitted: updatedSOP.privateChassisPermitted,
+        free_time_days: updatedSOP.freeTimeDays,
+        delivery_rules: updatedSOP.deliveryRules,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await supabase.from('accessorial_sops').update(payload).eq('id', updatedSOP.id);
+      if (error) console.error('Failed to persist SOP update:', error);
+    }
   };
 
   return (

@@ -59,8 +59,8 @@ export default function CustomerDashboard({
 }: CustomerDashboardProps) {
   
   const currentAccount = accounts.find(a => a.id === selectedAccountId) || accounts[0];
-  const currentSOP = accessorials.find(s => s.accountId === currentAccount.id);
-  const currentContacts = contacts.filter(c => c.accountId === currentAccount.id);
+  const currentSOP = currentAccount ? accessorials.find(s => s.accountId === currentAccount.id) : undefined;
+  const currentContacts = currentAccount ? contacts.filter(c => c.accountId === currentAccount.id) : [];
 
   // States for modals/inputs
   const [isEditingAccount, setIsEditingAccount] = useState(false);
@@ -81,8 +81,12 @@ export default function CustomerDashboard({
   const [editCargoValue, setEditCargoValue] = useState(currentAccount?.cargoValue || 0);
   const [editComm, setEditComm] = useState<PreferredComm>(currentAccount?.prefCommMethod || 'Email');
   const [editEdi, setEditEdi] = useState(currentAccount?.needsApiEdi || false);
-  const [editInvoiceDocs, setEditInvoiceDocs] = useState<string>(currentAccount?.invoiceDocsRequired.join(', ') || '');
+  const [editInvoiceDocs, setEditInvoiceDocs] = useState<string>(currentAccount?.invoiceDocsRequired?.join(', ') || '');
   const [editSeqBills, setEditSeqBills] = useState(currentAccount?.acceptSequenceBills || false);
+
+  const [editSOPText, setEditSOPText] = useState(currentSOP?.deliveryRules || '');
+  const [isSavingSOP, setIsSavingSOP] = useState(false);
+
 
   // Reset Edit Form on Account Change
   React.useEffect(() => {
@@ -99,13 +103,14 @@ export default function CustomerDashboard({
       setEditCargoValue(currentAccount.cargoValue);
       setEditComm(currentAccount.prefCommMethod);
       setEditEdi(currentAccount.needsApiEdi);
-      setEditInvoiceDocs(currentAccount.invoiceDocsRequired.join(', '));
+      setEditInvoiceDocs(currentAccount.invoiceDocsRequired?.join(', ') || '');
       setEditSeqBills(currentAccount.acceptSequenceBills);
+      setEditSOPText(currentSOP?.deliveryRules || '');
     }
     setIsEditingAccount(false);
     setShowAddContact(false);
     setShowAddAlert(false);
-  }, [selectedAccountId, currentAccount]);
+  }, [selectedAccountId, currentAccount, currentSOP]);
 
   // Contact form state
   const [contactName, setContactName] = useState('');
@@ -124,8 +129,10 @@ export default function CustomerDashboard({
 
   if (!currentAccount) {
     return (
-      <div className="bg-white rounded-xl p-8 border border-slate-100 text-center">
-        <p className="text-slate-500">No account selected. Select an account in the Onboarding Pipeline.</p>
+      <div className="bg-white rounded-xl p-8 border border-slate-100 text-center shadow-sm">
+        <h3 className="text-lg font-bold text-slate-800 mb-2">No Customer Accounts Available</h3>
+        <p className="text-slate-500 text-sm">There are currently no customer accounts in the database.</p>
+        <p className="text-slate-500 text-sm mt-1">Create a customer in the Onboarding Pipeline to begin.</p>
       </div>
     );
   }
@@ -272,6 +279,19 @@ export default function CustomerDashboard({
       ...currentSOP,
       [field]: val
     });
+  };
+
+  const handleSaveSOPText = async () => {
+    if (!currentSOP) return;
+    setIsSavingSOP(true);
+    try {
+      await onUpdateAccessorials({
+        ...currentSOP,
+        deliveryRules: editSOPText
+      });
+    } finally {
+      setIsSavingSOP(false);
+    }
   };
 
   return (
@@ -941,10 +961,25 @@ export default function CustomerDashboard({
 
                 {/* SOP Text */}
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-slate-805">
-                  <h6 className="text-[10px] font-bold uppercase tracking-wider mb-1">Standard Delivery SOP Instructions:</h6>
+                  <div className="flex items-center justify-between mb-1">
+                    <h6 className="text-[10px] font-bold uppercase tracking-wider">Standard Delivery SOP Instructions:</h6>
+                    <button 
+                      onClick={handleSaveSOPText}
+                      disabled={isSavingSOP || editSOPText === currentSOP.deliveryRules}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded transition ${
+                        isSavingSOP 
+                          ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                          : editSOPText !== currentSOP.deliveryRules
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-sm'
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {isSavingSOP ? 'Saving...' : editSOPText !== currentSOP.deliveryRules ? 'Save Instructions' : 'Saved'}
+                    </button>
+                  </div>
                   <textarea
-                    value={currentSOP.deliveryRules}
-                    onChange={(e) => handleUpdateSOPText('deliveryRules', e.target.value)}
+                    value={editSOPText}
+                    onChange={(e) => setEditSOPText(e.target.value)}
                     placeholder="Enter detailed standard delivery SOP instructions. Line breaks are preserved when saved and redisplayed."
                     className="w-full bg-white border border-slate-200 rounded p-2 text-xs font-semibold text-slate-800 mt-1 focus:outline-none focus:ring-1 focus:ring-slate-400 min-h-[180px] whitespace-pre-wrap resize-y"
                   />
@@ -1113,7 +1148,20 @@ export default function CustomerDashboard({
               Onboarding Documents Audit Checklist
             </h4>
           </div>
-          <span className="text-[10px] font-medium text-slate-500">VP of IT Compliance Dashboard</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-600">
+                {DOCUMENT_TYPES.filter(t => currentAccount.documents.some(d => d.type === t)).length + (currentAccount.billToCodeCreated ? 1 : 0) + (currentAccount.auditChecklistCompleted ? 1 : 0)} / {DOCUMENT_TYPES.length + 2} Steps
+              </span>
+              <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-600"
+                  style={{ width: `${Math.round(((DOCUMENT_TYPES.filter(t => currentAccount.documents.some(d => d.type === t)).length + (currentAccount.billToCodeCreated ? 1 : 0) + (currentAccount.auditChecklistCompleted ? 1 : 0)) / (DOCUMENT_TYPES.length + 2)) * 100)}%` }}
+                />
+              </div>
+            </div>
+            <span className="text-[10px] font-medium text-slate-500 hidden sm:inline">VP of IT Compliance Dashboard</span>
+          </div>
         </div>
 
         <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
