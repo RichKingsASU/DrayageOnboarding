@@ -23,7 +23,8 @@ import {
   Compass,
   FileSpreadsheet,
   LogOut,
-  Loader2
+  Loader2,
+  AlertOctagon
 } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_ACTS = 'drayage_onboarding_accounts_v2';
@@ -371,9 +372,9 @@ function MainApp() {
 }
 
 export default function App() {
-  const { session, loading } = useAuth();
+  const { isAuthenticated, isInitializing, isAutoAuthenticating, authMode, error, retry } = useAuth();
 
-  if (loading) {
+  if (isInitializing) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-slate-500">
@@ -384,9 +385,59 @@ export default function App() {
     );
   }
 
-  if (!session) {
+  if (isAutoAuthenticating) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-slate-500">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-sm font-medium">Preparing the OnDray staging workspace…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && authMode === 'auto_demo') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center space-y-4">
+          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+            <AlertOctagon className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-900">Unable to prepare the staging workspace</h2>
+          <p className="text-sm text-slate-500">{error.message}</p>
+          <button 
+            onClick={retry}
+            className="w-full bg-slate-900 text-white font-medium py-2 rounded-lg hover:bg-slate-800 transition"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    if (authMode === 'auto_demo') {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div className="text-center space-y-4">
+             <p className="text-slate-600">Failed to establish demo session.</p>
+             <button onClick={retry} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Retry</button>
+          </div>
+        </div>
+      );
+    }
     return <Login />;
   }
 
-  return <MainApp />;
+  return (
+    <>
+      {authMode === 'auto_demo' && (
+        <div className="bg-amber-300 text-amber-900 text-xs font-bold text-center py-1">
+          Staging Demo Session
+        </div>
+      )}
+      <MainApp />
+    </>
+  );
 }

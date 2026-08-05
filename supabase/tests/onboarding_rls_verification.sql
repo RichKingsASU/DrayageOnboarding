@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(15);
+SELECT plan(19);
 
 -- Setup testing roles
 CREATE ROLE test_user_a NOLOGIN;
@@ -131,6 +131,33 @@ SELECT throws_ok(
   'UPDATE storage.objects SET name = ''hacked'' WHERE bucket_id = ''drayage-vault'' AND name = ''aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/Other/foo.pdf''',
   'new row violates row-level security policy for table "objects"',
   'anon cannot update storage objects'
+);
+
+-- 4. ensure_demo_workspace RPC tests
+SELECT throws_ok(
+  'SELECT public.ensure_demo_workspace()',
+  'Not authenticated. ensure_demo_workspace requires a valid Supabase session.',
+  'anon cannot execute ensure_demo_workspace without an authenticated session'
+);
+
+RESET ROLE;
+SELECT set_config('request.jwt.claims', '{"sub": "99999999-9999-9999-9999-999999999999"}', true);
+SET ROLE authenticated;
+
+SELECT lives_ok(
+  'SELECT public.ensure_demo_workspace()',
+  'Authenticated new user can provision demo workspace'
+);
+
+SELECT results_eq(
+  'SELECT name FROM public.accounts WHERE organization_id = ''99999999-9999-9999-9999-999999999999''',
+  $$VALUES ('OnDray Demo Customer')$$,
+  'Demo workspace correctly provisions account'
+);
+
+SELECT lives_ok(
+  'SELECT public.ensure_demo_workspace()',
+  'ensure_demo_workspace is idempotent and can be called repeatedly safely'
 );
 
 
