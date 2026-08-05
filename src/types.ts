@@ -17,7 +17,12 @@ export interface OnboardingDocument {
   uploadedAt: string;
   size: string;
   contentKey?: string;
+  storagePath?: string;
+  uploadedBy?: string;
+  checklistItemKey?: keyof ChecklistState;
+  description?: string;
 }
+
 
 export interface Account {
   id: string;

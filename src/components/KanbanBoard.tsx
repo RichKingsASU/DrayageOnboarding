@@ -279,8 +279,7 @@ export default function KanbanBoard({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    const computedCode = newCode.trim() || newName.trim().slice(0, 6).toUpperCase();
-    onAddAccount(newName.trim(), computedCode);
+    onAddAccount(newName.trim(), newCode.trim());
     setNewName('');
     setNewCode('');
     setShowAddForm(false);

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import { Account } from '../types';
+import { normalizeAccount, normalizeSOP, supabase } from '../lib/supabaseClient';
+import { Account, AccessorialSOP } from '../types';
 
 export function useAccounts() {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accessorials, setAccessorials] = useState<AccessorialSOP[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +22,8 @@ export function useAccounts() {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        setAccounts(data as unknown as Account[]);
+        setAccounts(data.map(normalizeAccount));
+        setAccessorials(data.flatMap((row: any) => (row.sops || []).map(normalizeSOP)));
       } else if (error) {
         console.error('Error fetching accounts:', error);
       }
@@ -33,11 +35,9 @@ export function useAccounts() {
     // 2. Realtime WebSocket Channel
     const channel = supabase
       .channel('accounts_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'accounts' },
-        () => fetchAccounts()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, () => fetchAccounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => fetchAccounts())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'accessorial_sops' }, () => fetchAccounts())
       .subscribe();
 
     return () => {
@@ -45,5 +45,5 @@ export function useAccounts() {
     };
   }, []);
 
-  return { accounts, loading, setAccounts };
+  return { accounts, accessorials, loading, setAccounts, setAccessorials }; 
 }
