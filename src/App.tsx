@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, Component, ReactNode } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage } from './types';
 import { 
   INITIAL_ACCOUNTS, 
   INITIAL_CONTACTS, 
   INITIAL_ACCESSORIALS 
 } from './mockData';
-import { accountUpdatePayload, supabase } from './lib/supabaseClient';
+import { accountUpdatePayload, supabase, isSuabaseConfigured } from './lib/supabaseClient';
 import { useAccounts } from './hooks/useAccounts';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import Login from './components/Login';
@@ -18,25 +18,89 @@ import {
   Layers, 
   RefreshCw,
   Star,
-  FileCheck2,
-  ShieldCheck,
-  Compass,
-  FileSpreadsheet,
-  LogOut,
   Loader2,
-  AlertOctagon
+  AlertOctagon,
+  WifiOff,
+  Wifi,
+  FlaskConical
 } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY_ACTS = 'drayage_onboarding_accounts_v2';
-const LOCAL_STORAGE_KEY_CONS = 'drayage_onboarding_contacts_v2';
-const LOCAL_STORAGE_KEY_ACC = 'drayage_onboarding_access_v2';
+const BUILD_COMMIT = import.meta.env.VITE_COMMIT_SHA || 'dev';
+const BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
+const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'required';
+const SUPABASE_REF = (import.meta.env.VITE_SUPABASE_URL || '').replace('https://', '').split('.')[0] || 'unknown';
+
+// ─── Error Boundary ──────────────────────────────────────────────────────────
+interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
+interface ErrorBoundaryProps { children: ReactNode; fallbackTitle?: string; onReset?: () => void; }
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-white rounded-xl p-8 border border-red-200 shadow-sm text-center space-y-4">
+          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+            <AlertOctagon className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-900">{this.props.fallbackTitle ?? 'This section could not be displayed'}</h2>
+          <p className="text-sm text-slate-500">Your data has not been changed.</p>
+          <p className="text-xs text-slate-400 font-mono">Build: {BUILD_COMMIT.slice(0, 8)}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition"
+            >Try Again</button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition"
+            >Return to Pipeline</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ─── Configuration Error Screen ───────────────────────────────────────────────
+function ConfigErrorScreen() {
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-md w-full text-center space-y-4">
+        <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+          <AlertOctagon className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-semibold text-slate-900">Staging configuration is incomplete</h2>
+        <p className="text-sm text-slate-500">
+          The application cannot connect to its data services.<br/>
+          <code className="text-xs bg-slate-100 px-1 rounded">VITE_SUPABASE_URL</code> or{' '}
+          <code className="text-xs bg-slate-100 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> is missing.
+        </p>
+        <p className="text-xs text-slate-400">Contact the deployment team to set the correct environment variables in Netlify and redeploy.</p>
+        <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white font-medium py-2 rounded-lg hover:bg-slate-800 transition">Retry</button>
+      </div>
+    </div>
+  );
+}
+
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
 
-  const { accounts, accessorials: syncedAccessorials, loading, isRealtimeConnected, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
-  const { session, signOut, user } = useAuth();
+  const { accounts, accessorials: syncedAccessorials, loading, error: accountsError, isRealtimeConnected, retry: retryAccounts, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
+  const { session, signOut } = useAuth();
 
   // For the demo, we still use local state for contacts and accessorials,
   // but they could be populated from the nested accounts data.
@@ -244,6 +308,27 @@ function MainApp() {
         </button>
       </div>
 
+      {/* Service Status Bar */}
+      {(accountsError || !isRealtimeConnected) && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
+          <div className="max-w-7xl mx-auto flex flex-wrap gap-3 items-center text-xs font-medium text-amber-700">
+            {accountsError && (
+              <span className="flex items-center gap-1.5">
+                <AlertOctagon className="w-3.5 h-3.5" />
+                Customer data temporarily unavailable.
+                <button onClick={retryAccounts} className="underline hover:no-underline">Retry</button>
+              </span>
+            )}
+            {!isRealtimeConnected && !loading && (
+              <span className="flex items-center gap-1.5">
+                <WifiOff className="w-3.5 h-3.5" />
+                Live updates temporarily unavailable. Refresh to see latest changes.
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* PRESENTATION PLAYBOOK FLOATER PANEL */}
       {showWalkthrough && (
         <section className="bg-blue-50/80 border-b border-blue-200 px-4 py-3 text-slate-900 shadow-inner">
@@ -337,17 +422,19 @@ function MainApp() {
           )}
 
           {activeTab === 'dashboard' && (
-            <CustomerDashboard
-              accounts={accounts}
-              contacts={contacts}
-              accessorials={accessorials}
-              selectedAccountId={selectedAccountId}
-              onSelectAccount={setSelectedAccountId}
-              onUpdateAccount={handleUpdateAccount}
-              onAddContact={handleAddContact}
-              onDeleteContact={handleDeleteContact}
-              onUpdateAccessorials={handleUpdateAccessorials}
-            />
+            <ErrorBoundary fallbackTitle="Customer 360 could not be displayed">
+              <CustomerDashboard
+                accounts={accounts}
+                contacts={contacts}
+                accessorials={accessorials}
+                selectedAccountId={selectedAccountId}
+                onSelectAccount={setSelectedAccountId}
+                onUpdateAccount={handleUpdateAccount}
+                onAddContact={handleAddContact}
+                onDeleteContact={handleDeleteContact}
+                onUpdateAccessorials={handleUpdateAccessorials}
+              />
+            </ErrorBoundary>
           )}
         </div>
 
@@ -357,13 +444,30 @@ function MainApp() {
       <footer className="bg-white border-t border-slate-200 py-6 mt-12 shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-medium gap-4">
           <p>© 2026 Forrest Logistics Drayage Customer Onboarding CRM. Managed by Tanya Wahl.</p>
-          <div className="flex gap-4">
-            <span className="hover:underline cursor-pointer">Security & Credit Audit Protocol</span>
+          <div className="flex gap-4 items-center flex-wrap">
+            <span className="hover:underline cursor-pointer">Security &amp; Credit Audit Protocol</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer">Terminal SOP Rules</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer" onClick={() => setShowWalkthrough(true)}>Show Demonstration Guide</span>
           </div>
+        </div>
+        {/* Build diagnostics */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-400 font-mono">
+          <span>ENV: {APP_ENV}</span>
+          <span>·</span>
+          <span>AUTH: {AUTH_MODE}</span>
+          <span>·</span>
+          <span>PROJECT: {SUPABASE_REF}</span>
+          <span>·</span>
+          <span>COMMIT: {BUILD_COMMIT.slice(0, 8)}</span>
+          <span>·</span>
+          <span>BUILT: {BUILD_TIME.split('T')[0]}</span>
+          <span>·</span>
+          <span className={`flex items-center gap-1 ${isRealtimeConnected ? 'text-green-500' : 'text-slate-400'}`}>
+            {isRealtimeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+            Realtime
+          </span>
         </div>
       </footer>
 
@@ -372,6 +476,19 @@ function MainApp() {
 }
 
 export default function App() {
+  // Gate the entire app on Supabase configuration being present.
+  if (!isSuabaseConfigured) {
+    return <ConfigErrorScreen />;
+  }
+
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
   const { isAuthenticated, isInitializing, isAutoAuthenticating, authMode, error, retry } = useAuth();
 
   if (isInitializing) {
@@ -391,6 +508,7 @@ export default function App() {
         <div className="flex flex-col items-center gap-4 text-slate-500">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
           <p className="text-sm font-medium">Preparing the OnDray staging workspace…</p>
+          <p className="text-xs text-slate-400">Creating secure demo workspace...</p>
         </div>
       </div>
     );
@@ -431,13 +549,14 @@ export default function App() {
   }
 
   return (
-    <>
+    <ErrorBoundary fallbackTitle="Application error — please reload">
       {authMode === 'auto_demo' && (
-        <div className="bg-amber-300 text-amber-900 text-xs font-bold text-center py-1">
-          Staging Demo Session
+        <div className="bg-amber-300 text-amber-900 text-xs font-bold text-center py-1.5 flex items-center justify-center gap-2">
+          <FlaskConical className="w-3.5 h-3.5" />
+          Staging Demo — Synthetic Data Only — Not for Production Use
         </div>
       )}
       <MainApp />
-    </>
+    </ErrorBoundary>
   );
 }

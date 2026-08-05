@@ -58,7 +58,8 @@ export default function CustomerDashboard({
   onUpdateAccessorials
 }: CustomerDashboardProps) {
   
-  const currentAccount = accounts.find(a => a.id === selectedAccountId) || accounts[0];
+  // Safe lookup: never fall back to accounts[0] which may be undefined
+  const currentAccount = accounts.find(a => a.id === selectedAccountId) ?? (accounts.length > 0 ? accounts[0] : undefined);
   const currentSOP = currentAccount ? accessorials.find(s => s.accountId === currentAccount.id) : undefined;
   const currentContacts = currentAccount ? contacts.filter(c => c.accountId === currentAccount.id) : [];
 
@@ -140,6 +141,7 @@ export default function CustomerDashboard({
   // Handle Account Update
   const handleSaveAccount = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentAccount) return;
     const updated: Account = {
       ...currentAccount,
       name: editName,
@@ -164,7 +166,7 @@ export default function CustomerDashboard({
   // Add Contact Handler
   const handleAddContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactName.trim()) return;
+    if (!currentAccount || !contactName.trim()) return;
     onAddContact({
       accountId: currentAccount.id,
       name: contactName.trim(),
@@ -180,10 +182,11 @@ export default function CustomerDashboard({
     setShowAddContact(false);
   };
 
+
   // Red Flag SOP Alert handler
   const handleAddAlertSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!alertText.trim()) return;
+    if (!currentAccount || !alertText.trim()) return;
     const newAlert: CustomerAlert = {
       id: 'al_' + Date.now(),
       type: alertSeverity,
@@ -191,7 +194,7 @@ export default function CustomerDashboard({
     };
     const updated: Account = {
       ...currentAccount,
-      alerts: [...currentAccount.alerts, newAlert]
+      alerts: [...(currentAccount.alerts ?? []), newAlert]
     };
     onUpdateAccount(updated);
     setAlertText('');
@@ -200,16 +203,19 @@ export default function CustomerDashboard({
 
   // Delete Alert
   const handleDeleteAlert = (alertId: string) => {
+    if (!currentAccount) return;
     const updated: Account = {
       ...currentAccount,
-      alerts: currentAccount.alerts.filter(a => a.id !== alertId)
+      alerts: (currentAccount.alerts ?? []).filter(a => a.id !== alertId)
     };
     onUpdateAccount(updated);
   };
 
+
   // Mock upload document handler
   const handleUploadMockFile = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentAccount) return;
     const name = customFileName.trim() || `${fileToUploadType.replace(' ', '_')}_Upload_${new Date().getFullYear()}.pdf`;
     const newDoc: OnboardingDocument = {
       id: 'doc_' + Date.now(),
@@ -220,22 +226,25 @@ export default function CustomerDashboard({
     };
     onUpdateAccount(reconcileDocumentChecklist({
       ...currentAccount,
-      documents: [...currentAccount.documents, newDoc]
+      documents: [...(currentAccount.documents ?? []), newDoc]
     }));
     setCustomFileName('');
   };
 
   // Add document handler
   const handleAddDoc = (newDoc: OnboardingDocument) => {
+    if (!currentAccount) return;
     onUpdateAccount(reconcileDocumentChecklist({
       ...currentAccount,
-      documents: [...currentAccount.documents, newDoc]
+      documents: [...(currentAccount.documents ?? []), newDoc]
     }));
   };
 
+
   // Delete document
   const handleDeleteDoc = async (docId: string) => {
-    const doc = currentAccount.documents.find(d => d.id === docId);
+    if (!currentAccount) return;
+    const doc = currentAccount.documents?.find(d => d.id === docId);
     if (!doc) return;
     try {
       if (!doc.id.startsWith('doc_')) {
@@ -243,13 +252,14 @@ export default function CustomerDashboard({
       }
       onUpdateAccount(reconcileDocumentChecklist({
         ...currentAccount,
-        documents: currentAccount.documents.filter(d => d.id !== docId)
+        documents: (currentAccount.documents ?? []).filter(d => d.id !== docId)
       }));
     } catch (err) {
       console.error('Failed to remove document:', err);
       alert('Unable to remove this document. Please retry or contact an administrator.');
     }
   };
+
 
   // Toggle SOP checklist state
   const handleToggleSOPChecklist = (item: StatusUpdateCheck) => {

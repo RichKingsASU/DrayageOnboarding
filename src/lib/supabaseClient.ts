@@ -5,9 +5,8 @@ const runtimeEnv = (typeof import.meta !== 'undefined' && import.meta.env) || pr
 const supabaseUrl = runtimeEnv.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = runtimeEnv.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase Environment Variables');
-}
+/** True when required env vars are present. Check before rendering protected UI. */
+export const isSuabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 const realtimeTransport = typeof WebSocket === 'undefined'
   ? class TestWebSocket {
@@ -17,9 +16,12 @@ const realtimeTransport = typeof WebSocket === 'undefined'
     }
   : WebSocket;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Create the client even with empty strings so imports don't fail at module-load time.
+// The app will show a config-error screen via isSuabaseConfigured before any call is made.
+export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder', {
   realtime: { transport: realtimeTransport as any }
 });
+
 
 export const DOCUMENT_MAX_BYTES = 15 * 1024 * 1024;
 export const DOCUMENT_ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'] as const;
