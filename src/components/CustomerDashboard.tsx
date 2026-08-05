@@ -1,3 +1,9 @@
+/**
+ * File: CustomerDashboard.tsx
+ * Purpose: Displays and edits detailed customer onboarding information, checklist status, documents, and SOP data.
+ * Dependencies: React, motion animations, Supabase document deletion, uploader component, and shared domain types.
+ * Maintainer note: Form edits are propagated upward through onUpdateAccount rather than saved directly here.
+ */
 import React, { useState } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage, CreditTerms, EquipmentType, LoadType, PreferredComm, ContactRole, OnboardingDocument, CustomerAlert, AppointmentType, StatusUpdateCheck } from '../types';
 import { computeAccountStage, initializeChecklist } from '../onboardingRules';
@@ -46,6 +52,9 @@ interface CustomerDashboardProps {
 
 const DOCUMENT_TYPES = ['Credit Application', 'Liability Agreement', 'SOP Document', 'Other'] as const;
 
+/**
+ * Renders the selected customer's editable profile, checklist, contacts, document vault, and accessorial SOP workspace.
+ */
 export default function CustomerDashboard({
   accounts,
   contacts,

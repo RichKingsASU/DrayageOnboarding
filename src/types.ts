@@ -1,3 +1,9 @@
+/**
+ * File: types.ts
+ * Purpose: Defines shared domain types for accounts, contacts, onboarding documents, SOPs, and workflow state.
+ * Dependencies: Consumed throughout the React UI, Supabase mapping layer, workflow rules, and tests.
+ * Maintainer note: Keep these types aligned with Supabase enum/table definitions in migrations.
+ */
 export type CreditTerms = 'Prepaid' | 'Net 15' | 'Net 30' | 'Special (Net 45)' | 'Special (Net 60)' | '';
 export type EquipmentType = 'Dry' | 'Reefer' | '';
 export type LoadType = 'Palletized' | 'Floor Loaded' | 'Both' | '';

@@ -1,3 +1,9 @@
+/**
+ * File: App.tsx
+ * Purpose: Coordinates the top-level onboarding CRM experience and shared account state.
+ * Dependencies: React state/effects, Supabase persistence, local storage fallback data, and dashboard/Kanban components.
+ * Maintainer note: UI state is hydrated from Supabase first, with mock/local data retained as a fallback path.
+ */
 import React, { useState, useEffect } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage } from './types';
 import { 
@@ -26,6 +32,9 @@ const LOCAL_STORAGE_KEY_ACTS = 'drayage_onboarding_accounts_v2';
 const LOCAL_STORAGE_KEY_CONS = 'drayage_onboarding_contacts_v2';
 const LOCAL_STORAGE_KEY_ACC = 'drayage_onboarding_access_v2';
 
+/**
+ * Renders the primary onboarding CRM shell and wires account selection, persistence, and tab navigation.
+ */
 export default function App() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');

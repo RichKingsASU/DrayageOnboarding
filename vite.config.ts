@@ -1,3 +1,9 @@
+/**
+ * File: vite.config.ts
+ * Purpose: Configures the Vite development/build pipeline for the React onboarding application.
+ * Dependencies: Vite, React plugin, Tailwind CSS plugin, Node path resolution, and DISABLE_HMR env behavior.
+ * Maintainer note: HMR/file-watch settings are tuned for AI Studio editing stability.
+ */
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';

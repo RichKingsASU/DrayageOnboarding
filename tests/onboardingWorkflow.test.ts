@@ -1,8 +1,15 @@
+/**
+ * File: onboardingWorkflow.test.ts
+ * Purpose: Verifies onboarding account defaults and document/checklist reconciliation behavior.
+ * Dependencies: Node's built-in test runner/assertions and workflow/domain helpers.
+ * Maintainer note: These tests protect bill-to-code preservation and checklist document linkage rules.
+ */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBlankOnboardingAccount, reconcileDocumentChecklist } from '../src/onboardingWorkflow';
 import { Account, OnboardingDocument } from '../src/types';
 
+/** Builds a minimal document fixture for checklist reconciliation tests. */
 function doc(id: string, type: OnboardingDocument['type']): OnboardingDocument {
   return { id, name: `${id}.pdf`, type, uploadedAt: '2026-08-05', size: '1 MB' };
 }

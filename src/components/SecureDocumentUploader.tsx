@@ -1,3 +1,9 @@
+/**
+ * File: SecureDocumentUploader.tsx
+ * Purpose: Handles document selection, client-side validation, preview state, and secure Supabase uploads.
+ * Dependencies: React refs/state, motion animations, lucide-react icons, and Supabase document helpers.
+ * Maintainer note: File type and size rules are centralized in supabaseClient.ts constants.
+ */
 import React, { useState, useRef } from 'react';
 import { OnboardingDocument } from '../types';
 import { 
@@ -69,6 +75,9 @@ const SAMPLE_TEMPLATES = [
   }
 ];
 
+/**
+ * Manages document upload UI state, validates selected files, and forwards successful Supabase uploads to the parent view.
+ */
 export default function SecureDocumentUploader({
   accountName,
   accountId,

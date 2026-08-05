@@ -1,3 +1,8 @@
+-- File: 20260804000000_initial_schema.sql
+-- Purpose: Creates the initial Supabase/Postgres schema for drayage onboarding accounts, contacts, SOPs, documents, and alerts.
+-- Dependencies: PostgreSQL uuid-ossp extension, Supabase auth.uid(), storage policies, and realtime-compatible tables.
+-- Maintainer note: Enum values should remain aligned with TypeScript domain types.
+
 -- Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

@@ -1,3 +1,9 @@
+/**
+ * File: supabaseClient.test.ts
+ * Purpose: Verifies Supabase payload mapping and document file validation behavior.
+ * Dependencies: Node's built-in test runner/assertions plus runtime env placeholders for Supabase client creation.
+ * Maintainer note: Environment variables are set before dynamically importing the Supabase client module.
+ */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 

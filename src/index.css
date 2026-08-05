@@ -1,1 +1,7 @@
+/*
+ * File: index.css
+ * Purpose: Loads Tailwind CSS utilities for the React onboarding application.
+ * Dependencies: Tailwind CSS via the Vite plugin pipeline.
+ * Maintainer note: Global styling currently enters through Tailwind's import directive only.
+ */
 @import "tailwindcss";

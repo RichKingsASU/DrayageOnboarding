@@ -1,3 +1,8 @@
+-- File: 20260805120000_onboarding_validation_fixes.sql
+-- Purpose: Validates realtime publication membership, storage constraints, RLS policy behavior, and workflow defaults.
+-- Dependencies: Supabase realtime publication, storage.objects, auth.uid(), and prior onboarding migrations.
+-- Maintainer note: Uses idempotent guards so local resets and repeated migration runs stay safe.
+
 -- 1. Ensure required tables are in the realtime publication
 BEGIN;
 

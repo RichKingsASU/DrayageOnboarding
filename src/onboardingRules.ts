@@ -1,5 +1,14 @@
+/**
+ * File: onboardingRules.ts
+ * Purpose: Encapsulates checklist initialization and pipeline-stage derivation rules for onboarding accounts.
+ * Dependencies: Shared Account, ChecklistState, and PipelineStage types.
+ * Maintainer note: Business-rule changes here can affect Kanban placement and dashboard completion status.
+ */
 import { Account, ChecklistState, PipelineStage } from './types';
 
+/**
+ * Returns the persisted checklist state when available, otherwise derives the default checklist for a prospect or existing account.
+ */
 export function initializeChecklist(account: Account): ChecklistState {
   if (account.checklistState) {
     return account.checklistState;
@@ -48,6 +57,9 @@ export function initializeChecklist(account: Account): ChecklistState {
   }
 }
 
+/**
+ * Computes the workflow pipeline stage implied by agreement, setup, document, kickoff, and work-order checklist state.
+ */
 export function computeAccountStage(account: Account): PipelineStage {
   const checklist = initializeChecklist(account);
 

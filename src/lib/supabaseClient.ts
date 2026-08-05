@@ -1,3 +1,9 @@
+/**
+ * File: supabaseClient.ts
+ * Purpose: Creates the Supabase client and maps account/document records between UI and database shapes.
+ * Dependencies: Supabase JavaScript client, runtime Vite/Node environment variables, and shared domain types.
+ * Maintainer note: Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY at runtime.
+ */
 import { createClient } from '@supabase/supabase-js';
 import { Account, AccessorialSOP, ChecklistState, OnboardingDocument } from '../types';
 
@@ -17,18 +23,23 @@ const realtimeTransport = typeof WebSocket === 'undefined'
     }
   : WebSocket;
 
+/** Shared Supabase client used for database, storage, and realtime calls. */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   realtime: { transport: realtimeTransport as any }
 });
 
+/** Maximum accepted onboarding document upload size in bytes. */
 export const DOCUMENT_MAX_BYTES = 15 * 1024 * 1024;
+/** File extensions accepted by the onboarding document validator. */
 export const DOCUMENT_ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'] as const;
+/** Maps uploaded document types to checklist fields completed by those uploads. */
 export const DOCUMENT_CHECKLIST_ITEM_BY_TYPE: Partial<Record<OnboardingDocument['type'], keyof ChecklistState>> = {
   'SOP Document': 'filesUploaded',
   'Credit Application': 'creditApp',
   'Liability Agreement': 'contract'
 };
 
+/** MIME types accepted by the onboarding document validator when the browser provides one. */
 export const DOCUMENT_ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -37,6 +48,9 @@ export const DOCUMENT_ALLOWED_MIME_TYPES = [
   'image/jpeg'
 ] as const;
 
+/**
+ * Validates client-selected onboarding documents against extension, size, and MIME-type rules.
+ */
 export function validateDocumentFile(file: File) {
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
   if (!DOCUMENT_ALLOWED_EXTENSIONS.includes(extension as any)) {
@@ -51,6 +65,9 @@ export function validateDocumentFile(file: File) {
 }
 
 
+/**
+ * Converts a Supabase documents row into the OnboardingDocument shape consumed by React components.
+ */
 export function normalizeDocument(row: any): OnboardingDocument {
   return {
     id: row.id,
@@ -66,6 +83,9 @@ export function normalizeDocument(row: any): OnboardingDocument {
   };
 }
 
+/**
+ * Converts a Supabase accessorial_sops row into the AccessorialSOP domain shape used by the UI.
+ */
 export function normalizeSOP(row: any): AccessorialSOP {
   return {
     id: row.id,
@@ -88,6 +108,9 @@ export function normalizeSOP(row: any): AccessorialSOP {
   };
 }
 
+/**
+ * Converts a Supabase accounts row and nested relations into the Account domain shape used by the UI.
+ */
 export function normalizeAccount(row: any): Account {
   const docs = (row.documents || []).map(normalizeDocument);
   return {
@@ -115,6 +138,9 @@ export function normalizeAccount(row: any): Account {
   };
 }
 
+/**
+ * Builds the Supabase accounts update payload for editable Account fields without writing derived checklist JSON.
+ */
 export function accountUpdatePayload(account: Account) {
   return {
     legal_name: account.name,
@@ -138,6 +164,9 @@ export function accountUpdatePayload(account: Account) {
   };
 }
 
+/**
+ * Uploads a validated onboarding document to Supabase Storage and records its metadata in the documents table.
+ */
 export async function uploadDocumentToSupabase(
   accountId: string,
   file: File,
@@ -179,6 +208,9 @@ export async function uploadDocumentToSupabase(
   return docRecord;
 }
 
+/**
+ * Deletes document metadata and, when present, the matching Supabase Storage object.
+ */
 export async function deleteDocumentFromSupabase(document: OnboardingDocument) {
   if (document.storagePath || document.contentKey) {
     const storagePath = document.storagePath || document.contentKey;
