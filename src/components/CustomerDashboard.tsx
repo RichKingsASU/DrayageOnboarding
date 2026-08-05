@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage, CreditTerms, EquipmentType, LoadType, PreferredComm, ContactRole, OnboardingDocument, CustomerAlert, AppointmentType, StatusUpdateCheck } from '../types';
 import { computeAccountStage, initializeChecklist } from '../onboardingRules';
+import { reconcileDocumentChecklist } from '../onboardingWorkflow';
 import SecureDocumentUploader from './SecureDocumentUploader';
+import { deleteDocumentFromSupabase } from '../lib/supabaseClient';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Building2, 
@@ -134,7 +136,7 @@ export default function CustomerDashboard({
     const updated: Account = {
       ...currentAccount,
       name: editName,
-      billToCode: editBillToCode,
+      billToCode: editBillToCode.trim(),
       creditTerms: editCreditTerms,
       commodity: editCommodity,
       equipmentType: editEquip,
@@ -209,33 +211,37 @@ export default function CustomerDashboard({
       uploadedAt: new Date().toISOString().split('T')[0],
       size: `${(Math.random() * 2 + 0.5).toFixed(1)} MB`
     };
-    const updated: Account = {
+    onUpdateAccount(reconcileDocumentChecklist({
       ...currentAccount,
       documents: [...currentAccount.documents, newDoc]
-    };
-    updated.stage = computeAccountStage(updated);
-    onUpdateAccount(updated);
+    }));
     setCustomFileName('');
   };
 
   // Add document handler
   const handleAddDoc = (newDoc: OnboardingDocument) => {
-    const updated: Account = {
+    onUpdateAccount(reconcileDocumentChecklist({
       ...currentAccount,
       documents: [...currentAccount.documents, newDoc]
-    };
-    updated.stage = computeAccountStage(updated);
-    onUpdateAccount(updated);
+    }));
   };
 
   // Delete document
-  const handleDeleteDoc = (docId: string) => {
-    const updated: Account = {
-      ...currentAccount,
-      documents: currentAccount.documents.filter(d => d.id !== docId)
-    };
-    updated.stage = computeAccountStage(updated);
-    onUpdateAccount(updated);
+  const handleDeleteDoc = async (docId: string) => {
+    const doc = currentAccount.documents.find(d => d.id === docId);
+    if (!doc) return;
+    try {
+      if (!doc.id.startsWith('doc_')) {
+        await deleteDocumentFromSupabase(doc);
+      }
+      onUpdateAccount(reconcileDocumentChecklist({
+        ...currentAccount,
+        documents: currentAccount.documents.filter(d => d.id !== docId)
+      }));
+    } catch (err) {
+      console.error('Failed to remove document:', err);
+      alert('Unable to remove this document. Please retry or contact an administrator.');
+    }
   };
 
   // Toggle SOP checklist state
@@ -434,14 +440,15 @@ export default function CustomerDashboard({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">Bill-To Code</label>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">Bill-To Code (Optional)</label>
                   <input
                     type="text"
-                    required
+                    aria-describedby="bill-to-code-help"
                     value={editBillToCode}
                     onChange={(e) => setEditBillToCode(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs font-semibold focus:outline-none"
                   />
+                  <p id="bill-to-code-help" className="mt-1 text-[10px] text-slate-400">Optional. Leave blank until a billing code is manually assigned.</p>
                 </div>
 
                 <div>
@@ -938,8 +945,8 @@ export default function CustomerDashboard({
                   <textarea
                     value={currentSOP.deliveryRules}
                     onChange={(e) => handleUpdateSOPText('deliveryRules', e.target.value)}
-                    placeholder="Enter customized rules (e.g., standard deliveries are live unloads. Dispatchers confirm warehouse coordinates before vehicle outgate.)"
-                    className="w-full bg-white border border-slate-200 rounded p-2 text-xs font-semibold text-slate-800 mt-1 focus:outline-none focus:ring-1 focus:ring-slate-400 min-h-[60px]"
+                    placeholder="Enter detailed standard delivery SOP instructions. Line breaks are preserved when saved and redisplayed."
+                    className="w-full bg-white border border-slate-200 rounded p-2 text-xs font-semibold text-slate-800 mt-1 focus:outline-none focus:ring-1 focus:ring-slate-400 min-h-[180px] whitespace-pre-wrap resize-y"
                   />
                 </div>
 
@@ -1239,7 +1246,7 @@ export default function CustomerDashboard({
                           {doc.name}
                         </h6>
                         <p className="text-[10px] text-slate-450 font-medium">
-                          Type: <span className="text-slate-600 font-semibold">{doc.type}</span> • Size: <span className="text-slate-600 font-semibold">{doc.size}</span> • Uploaded: {doc.uploadedAt}
+                          Type: <span className="text-slate-600 font-semibold">{doc.type}</span> • Size: <span className="text-slate-600 font-semibold">{doc.size}</span> • Uploaded: {doc.uploadedAt} • By: {doc.uploadedBy || 'System'}
                         </p>
                       </div>
                     </div>

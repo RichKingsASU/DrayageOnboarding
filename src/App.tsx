@@ -5,8 +5,9 @@ import {
   INITIAL_CONTACTS, 
   INITIAL_ACCESSORIALS 
 } from './mockData';
-import { supabase } from './lib/supabaseClient';
+import { accountUpdatePayload, supabase } from './lib/supabaseClient';
 import { useAccounts } from './hooks/useAccounts';
+import { createBlankOnboardingAccount } from './onboardingWorkflow';
 import KanbanBoard from './components/KanbanBoard';
 import CustomerDashboard from './components/CustomerDashboard';
 import { 
@@ -29,12 +30,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
 
-  const { accounts, loading, setAccounts } = useAccounts();
+  const { accounts, accessorials: syncedAccessorials, loading, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
 
   // For the demo, we still use local state for contacts and accessorials,
   // but they could be populated from the nested accounts data.
   const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
-  const [accessorials, setAccessorials] = useState<AccessorialSOP[]>(INITIAL_ACCESSORIALS);
+  const [localAccessorials, setLocalAccessorials] = useState<AccessorialSOP[]>(INITIAL_ACCESSORIALS);
+  const accessorials = syncedAccessorials.length ? syncedAccessorials : localAccessorials;
+  const setAccessorials = syncedAccessorials.length ? setSyncedAccessorials : setLocalAccessorials;
 
   // Showcase assistant state
   const [showWalkthrough, setShowWalkthrough] = useState(true);
@@ -64,36 +67,19 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
-  const handleUpdateAccount = (updatedAccount: Account) => {
+  const handleUpdateAccount = async (updatedAccount: Account) => {
     setAccounts(prev => prev.map(a => a.id === updatedAccount.id ? updatedAccount : a));
+    if (!updatedAccount.id.startsWith('act_')) {
+      const { error } = await supabase.from('accounts').update(accountUpdatePayload(updatedAccount)).eq('id', updatedAccount.id);
+      if (error) console.error('Failed to persist account update:', error);
+    }
   };
 
-  const handleAddAccount = (name: string, billToCode: string) => {
+  const handleAddAccount = (name: string, billToCode = '') => {
     const newId = 'act_' + Date.now();
     
-    // Create new Account - blanked out for onboarding
-    const newAct: Account = {
-      id: newId,
-      name,
-      billToCode,
-      creditTerms: '',
-      invoiceDocsRequired: [],
-      acceptSequenceBills: false,
-      commodity: '',
-      equipmentType: '',
-      loadType: '',
-      expectedWeight: '',
-      isBonded: false,
-      hazmatClass: '',
-      cargoValue: 0,
-      prefCommMethod: '',
-      needsApiEdi: false,
-      stage: 'CustomerInquiry',
-      alerts: [],
-      documents: [],
-      billToCodeCreated: false,
-      isNewProspect: true
-    };
+    // Create new Account - blanked out for onboarding. Bill-to code stays empty unless manually entered.
+    const newAct = createBlankOnboardingAccount(newId, name, billToCode);
 
     // Create twin default Accessorial Object
     const newSOP: AccessorialSOP = {

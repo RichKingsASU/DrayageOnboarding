@@ -18,7 +18,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { uploadDocumentToSupabase } from '../lib/supabaseClient';
+import { DOCUMENT_ALLOWED_EXTENSIONS, DOCUMENT_MAX_BYTES, uploadDocumentToSupabase, validateDocumentFile } from '../lib/supabaseClient';
 
 interface SecureDocumentUploaderProps {
   accountName: string;
@@ -74,9 +74,11 @@ export default function SecureDocumentUploader({
   accountId,
   onUploadDocument
 }: SecureDocumentUploaderProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const selectedFile = selectedFiles[0] || null;
   const [customName, setCustomName] = useState<string>('');
   const [docType, setDocType] = useState<DocType>('Credit Application');
+  const [description, setDescription] = useState('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [securityLevel, setSecurityLevel] = useState<'Restricted' | 'Confidential' | 'Standard'>('Confidential');
   
@@ -112,7 +114,7 @@ export default function SecureDocumentUploader({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      setSelectedFile(file);
+      try { Array.from(e.dataTransfer.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.dataTransfer.files)); } catch (err) { setProcessing({ isProcessing: false, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
       if (!customName) {
         setCustomName(file.name.replace(/\.[^/.]+$/, ""));
       }
@@ -122,7 +124,7 @@ export default function SecureDocumentUploader({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      setSelectedFile(file);
+      try { Array.from(e.target.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.target.files)); } catch (err) { setProcessing({ isProcessing: false, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
       if (!customName) {
         setCustomName(file.name.replace(/\.[^/.]+$/, ""));
       }
@@ -130,7 +132,7 @@ export default function SecureDocumentUploader({
   };
 
   const handleSelectTemplate = (tpl: typeof SAMPLE_TEMPLATES[0]) => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setCustomName(tpl.name.replace(/\.[^/.]+$/, ""));
     setDocType(tpl.type);
   };
@@ -149,8 +151,12 @@ export default function SecureDocumentUploader({
 
     try {
       // Step 1 & 2: Real Upload
-      const fileToUpload = selectedFile || new File(["dummy content"], fileNameToUse, { type: "application/pdf" });
-      const docRecord = await uploadDocumentToSupabase(accountId, fileToUpload, docType);
+      const filesToUpload = selectedFiles.length ? selectedFiles : [new File(["dummy content"], fileNameToUse, { type: "application/pdf" })];
+      const docRecords: any[] = [];
+      for (const fileToUpload of filesToUpload) {
+        docRecords.push(await uploadDocumentToSupabase(accountId, fileToUpload, docType, description));
+      }
+      const docRecord = docRecords[docRecords.length - 1];
       
       setProcessing(prev => ({
         ...prev,
@@ -170,7 +176,11 @@ export default function SecureDocumentUploader({
           type: docRecord.type as DocType,
           uploadedAt: new Date(docRecord.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           size: `${(docRecord.size_bytes / (1024 * 1024)).toFixed(2)} MB`,
-          contentKey: docRecord.storage_path
+          contentKey: docRecord.storage_path,
+          storagePath: docRecord.storage_path,
+          uploadedBy: docRecord.uploaded_by || 'Current user',
+          checklistItemKey: docRecord.checklist_item_key || undefined,
+          description: docRecord.description || ''
         };
 
         setProcessing({
@@ -187,12 +197,24 @@ export default function SecureDocumentUploader({
           }
         });
 
-        onUploadDocument(newDoc);
+        docRecords.forEach((record) => onUploadDocument({
+          id: record.id,
+          name: record.name,
+          type: record.type as DocType,
+          uploadedAt: new Date(record.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          size: `${(record.size_bytes / (1024 * 1024)).toFixed(2)} MB`,
+          contentKey: record.storage_path,
+          storagePath: record.storage_path,
+          uploadedBy: record.uploaded_by || 'Current user',
+          checklistItemKey: record.checklist_item_key || undefined,
+          description: record.description || ''
+        }));
         setLastUploadedDoc(newDoc);
 
         // Reset form fields
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setCustomName('');
+        setDescription('');
       }, 1000);
 
     } catch (err) {
@@ -343,6 +365,7 @@ export default function SecureDocumentUploader({
             ref={fileInputRef}
             onChange={handleFileChange}
             accept=".pdf,.docx,.doc,.png,.jpg,.jpeg"
+            multiple
             className="hidden" 
           />
 
@@ -355,7 +378,7 @@ export default function SecureDocumentUploader({
               <div>
                 <p className="text-xs font-bold text-slate-800">{selectedFile.name}</p>
                 <p className="text-[10px] text-slate-500">
-                  Size: {(selectedFile.size / 1024).toFixed(0)} KB • Type: {selectedFile.type || 'PDF Document'}
+                  Size: {(selectedFile.size / 1024).toFixed(0)} KB • Type: {selectedFile.type || 'PDF Document'}{selectedFiles.length > 1 ? ` • ${selectedFiles.length} files selected` : ''}
                 </p>
                 <span className="mt-1 inline-block text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
                   File Ready for Compliance Audit
@@ -367,7 +390,7 @@ export default function SecureDocumentUploader({
                   Drag & Drop PDF document here, or <span className="text-blue-600 underline">browse computer</span>
                 </p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Supports PDF, DOCX, and scanned agreement files (Max 15MB)
+                  Supports PDF, DOCX, DOC, PNG, JPG, and JPEG files (Max 15MB each)
                 </p>
               </div>
             )}
@@ -449,6 +472,19 @@ export default function SecureDocumentUploader({
               <option value="Standard">Standard Operations Team</option>
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            Optional Document Description
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Add a short note explaining how this document supports onboarding."
+            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[64px]"
+          />
+          <p className="mt-1 text-[10px] text-slate-400">Allowed: {DOCUMENT_ALLOWED_EXTENSIONS.join(', ')} up to {DOCUMENT_MAX_BYTES / (1024 * 1024)}MB.</p>
         </div>
 
         {/* Submit Action Button */}
