@@ -1,57 +1,82 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { normalizeAccount, normalizeSOP, supabase } from '../lib/supabaseClient';
 import { Account, AccessorialSOP } from '../types';
+import { useAuth } from './useAuth';
 
 export function useAccounts() {
+  const { session } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accessorials, setAccessorials] = useState<AccessorialSOP[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
-  const channelNameRef = useRef(`accounts_realtime_${Math.random().toString(36).slice(2)}`);
+  // Generate a unique channel per hook mount to prevent cleanup collisions
+  const channelNameRef = useRef(`drayage-accounts-${crypto.randomUUID()}`);
+
+  const fetchAccounts = useCallback(async () => {
+    if (!session) {
+      setAccounts([]);
+      setAccessorials([]);
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    const { data, err } = await supabase
+      .from('accounts')
+      .select(`
+        *,
+        sops:accessorial_sops(*),
+        contacts(*),
+        documents(*),
+        alerts:customer_alerts(*)
+      `)
+      .order('created_at', { ascending: false })
+      .then(res => ({ data: res.data, err: res.error }));
+
+    if (err) {
+      console.error('Error fetching accounts:', err);
+      setError(err);
+      // We do NOT clear accounts here on fetch failure, so we retain the last known good state
+    } else if (data) {
+      setAccounts(data.map(normalizeAccount));
+      setAccessorials(data.flatMap((row: any) => (row.sops || []).map(normalizeSOP)));
+    }
+    setLoading(false);
+  }, [session]);
 
   useEffect(() => {
     let isMounted = true;
     let refetchTimer: ReturnType<typeof setTimeout> | undefined;
 
-    // 1. Initial Fetch
-    async function fetchAccounts() {
-      const { data, error } = await supabase
-        .from('accounts')
-        .select(`
-          *,
-          sops:accessorial_sops(*),
-          contacts(*),
-          documents(*),
-          alerts:customer_alerts(*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (!isMounted) return;
-
-      if (!error && data) {
-        setAccounts(data.map(normalizeAccount));
-        setAccessorials(data.flatMap((row: any) => (row.sops || []).map(normalizeSOP)));
-      } else if (error) {
-        console.error('Error fetching accounts:', error);
-      }
-      if (isMounted) setLoading(false);
-    }
-
     fetchAccounts();
+
+    if (!session) {
+      return; // Do not subscribe if unauthenticated
+    }
 
     const scheduleFetchAccounts = () => {
       if (refetchTimer) clearTimeout(refetchTimer);
-      refetchTimer = setTimeout(fetchAccounts, 150);
+      refetchTimer = setTimeout(() => {
+        if (isMounted) fetchAccounts();
+      }, 150);
     };
 
-    // 2. Realtime WebSocket Channel
+    // Realtime WebSocket Channel using a unique name for this hook instance
     const channel = supabase
       .channel(channelNameRef.current)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, scheduleFetchAccounts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, scheduleFetchAccounts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'accessorial_sops' }, scheduleFetchAccounts)
-      .subscribe((status, error) => {
-        if (error) console.error('Accounts realtime subscription error:', status, error);
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          if (isMounted) setIsRealtimeConnected(true);
+        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          if (isMounted) setIsRealtimeConnected(false);
+          if (err) console.error('Accounts realtime subscription error:', status, err);
+        }
       });
 
     return () => {
@@ -59,7 +84,7 @@ export function useAccounts() {
       if (refetchTimer) clearTimeout(refetchTimer);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchAccounts, session]);
 
-  return { accounts, accessorials, loading, setAccounts, setAccessorials }; 
+  return { accounts, accessorials, loading, error, isRealtimeConnected, setAccounts, setAccessorials, retry: fetchAccounts }; 
 }

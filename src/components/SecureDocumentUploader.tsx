@@ -30,6 +30,7 @@ type DocType = 'Credit Application' | 'Liability Agreement' | 'SOP Document' | '
 
 interface ProcessingState {
   isProcessing: boolean;
+  isError: boolean;
   step: number; // 0 to 4
   progress: number; // 0 to 100%
   statusMessage: string;
@@ -87,6 +88,7 @@ export default function SecureDocumentUploader({
   // Processing state
   const [processing, setProcessing] = useState<ProcessingState>({
     isProcessing: false,
+    isError: false,
     step: 0,
     progress: 0,
     statusMessage: ''
@@ -114,7 +116,7 @@ export default function SecureDocumentUploader({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      try { Array.from(e.dataTransfer.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.dataTransfer.files)); } catch (err) { setProcessing({ isProcessing: false, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
+      try { Array.from(e.dataTransfer.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.dataTransfer.files)); setProcessing(p => ({...p, isError: false})); } catch (err) { setProcessing({ isProcessing: false, isError: true, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
       if (!customName) {
         setCustomName(file.name.replace(/\.[^/.]+$/, ""));
       }
@@ -124,7 +126,7 @@ export default function SecureDocumentUploader({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      try { Array.from(e.target.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.target.files)); } catch (err) { setProcessing({ isProcessing: false, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
+      try { Array.from(e.target.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.target.files)); setProcessing(p => ({...p, isError: false})); } catch (err) { setProcessing({ isProcessing: false, isError: true, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
       if (!customName) {
         setCustomName(file.name.replace(/\.[^/.]+$/, ""));
       }
@@ -135,6 +137,7 @@ export default function SecureDocumentUploader({
     setSelectedFiles([]);
     setCustomName(tpl.name.replace(/\.[^/.]+$/, ""));
     setDocType(tpl.type);
+    setProcessing(p => ({...p, isError: false}));
   };
 
   const startUploadAndProcessing = async () => {
@@ -144,10 +147,12 @@ export default function SecureDocumentUploader({
 
     setProcessing({
       isProcessing: true,
+      isError: false,
       step: 1,
       progress: 25,
       statusMessage: 'Uploading document to encrypted vault...'
     });
+    setLastUploadedDoc(null);
 
     try {
       // Step 1 & 2: Real Upload
@@ -185,6 +190,7 @@ export default function SecureDocumentUploader({
 
         setProcessing({
           isProcessing: false,
+          isError: false,
           step: 4,
           progress: 100,
           statusMessage: 'Document verified, audited, and stored in Document Vault!',
@@ -217,13 +223,22 @@ export default function SecureDocumentUploader({
         setDescription('');
       }, 1000);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      
+      let errorMessage = 'Upload failed due to a network or server error. Please try again.';
+      if (err.message && err.message.includes('fetch')) {
+        errorMessage = 'Network error: Service unavailable (503). Check connectivity and try again.';
+      } else if (err.message) {
+        errorMessage = `Upload Failed: ${err.message}`;
+      }
+
       setProcessing({
         isProcessing: false,
+        isError: true,
         step: 0,
         progress: 0,
-        statusMessage: 'Upload failed. Please try again.'
+        statusMessage: errorMessage
       });
     }
   };
@@ -297,6 +312,38 @@ export default function SecureDocumentUploader({
               <p className="text-[11px] text-blue-800 font-medium italic">
                 {processing.statusMessage}
               </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Error Alert Banner */}
+        <AnimatePresence>
+          {processing.isError && !processing.isProcessing && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 flex items-start justify-between gap-3 text-rose-900 text-xs"
+            >
+              <div className="flex items-start gap-2.5">
+                <div className="p-1 rounded-full bg-rose-100 text-rose-700 shrink-0 mt-0.5">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="block font-bold">Document Processing Failed</strong>
+                  <p className="text-[11px] text-rose-800 mt-0.5">
+                    {processing.statusMessage}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setProcessing(p => ({...p, isError: false}))}
+                className="text-rose-600 hover:text-rose-900 p-1 cursor-pointer"
+                title="Dismiss message"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

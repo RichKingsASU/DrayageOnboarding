@@ -1,7 +1,7 @@
 name: Validate
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, staging ]
 
 jobs:
   validate:
@@ -50,3 +50,12 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: supabase stop
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E Tests (Auto Demo Mode)
+        run: npm run test:e2e:demo
+
+      - name: Run E2E Tests (Required Mode)
+        run: npm run test:e2e:prod
