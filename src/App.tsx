@@ -1,4 +1,4 @@
-import React, { useState, Component, ReactNode } from 'react';
+import React, { useState } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage } from './types';
 import { 
   INITIAL_ACCOUNTS, 
@@ -12,6 +12,7 @@ import Login from './components/Login';
 import { createBlankOnboardingAccount } from './onboardingWorkflow';
 import KanbanBoard from './components/KanbanBoard';
 import CustomerDashboard from './components/CustomerDashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { 
   Building2, 
   UserSquare2, 
@@ -31,47 +32,6 @@ const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
 const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'required';
 const SUPABASE_REF = (import.meta.env.VITE_SUPABASE_URL || '').replace('https://', '').split('.')[0] || 'unknown';
 
-// ─── Error Boundary ──────────────────────────────────────────────────────────
-interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
-interface ErrorBoundaryProps { children: ReactNode; fallbackTitle?: string; onReset?: () => void; }
-
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info.componentStack);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="bg-white rounded-xl p-8 border border-red-200 shadow-sm text-center space-y-4">
-          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
-            <AlertOctagon className="w-6 h-6" />
-          </div>
-          <h2 className="text-lg font-semibold text-slate-900">{this.props.fallbackTitle ?? 'This section could not be displayed'}</h2>
-          <p className="text-sm text-slate-500">Your data has not been changed.</p>
-          <p className="text-xs text-slate-400 font-mono">Build: {BUILD_COMMIT.slice(0, 8)}</p>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => this.setState({ hasError: false, error: null })}
-              className="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition"
-            >Try Again</button>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition"
-            >Return to Pipeline</button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 // ─── Configuration Error Screen ───────────────────────────────────────────────
 function ConfigErrorScreen() {
