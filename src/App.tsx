@@ -30,7 +30,8 @@ import {
   WifiOff,
   Wifi,
   FlaskConical,
-  UserCheck
+  UserCheck,
+  LogOut
 } from 'lucide-react';
 
 const BUILD_COMMIT = import.meta.env.VITE_COMMIT_SHA || 'dev';
@@ -66,12 +67,23 @@ export const PROFILES: UserProfile[] = [
   }
 ];
 
+function getInitialRoute(): { tab: 'kanban' | 'dashboard'; accountId: string } {
+  if (typeof window === 'undefined') return { tab: 'kanban', accountId: 'act_1' };
+  const params = new URLSearchParams(window.location.search);
+  const tabParam = params.get('tab');
+  const accountParam = params.get('account') || params.get('accountId');
+  const tab = (tabParam === 'dashboard' || tabParam === '360') ? 'dashboard' : 'kanban';
+  const accountId = accountParam || 'act_1';
+  return { tab, accountId };
+}
+
 /**
  * Renders the primary onboarding CRM shell and wires account selection, persistence, and tab navigation.
  */
 function MainApp() {
-  const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
+  const initialRoute = getInitialRoute();
+  const [activeTab, setActiveTabState] = useState<'kanban' | 'dashboard'>(initialRoute.tab);
+  const [selectedAccountId, setSelectedAccountIdState] = useState<string>(initialRoute.accountId);
   const [activeProfile, setActiveProfile] = useState<UserProfile>(PROFILES[0]);
 
   const { accounts, accessorials: syncedAccessorials, loading, error: accountsError, isRealtimeConnected, retry: retryAccounts, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
@@ -87,7 +99,46 @@ function MainApp() {
   // Showcase assistant state
   const [showWalkthrough, setShowWalkthrough] = useState(true);
 
-  // Synced with Supabase via useAccounts hook.
+  // Synchronize navigation state with browser history and URL query parameters
+  const navigateTo = (tab: 'kanban' | 'dashboard', accountId?: string, pushHistory = true) => {
+    const nextTab = tab;
+    const nextAccountId = accountId || selectedAccountId;
+    setActiveTabState(nextTab);
+    if (accountId) setSelectedAccountIdState(accountId);
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (nextTab === 'dashboard') {
+        url.searchParams.set('tab', 'dashboard');
+        url.searchParams.set('account', nextAccountId);
+      } else {
+        url.searchParams.delete('tab');
+        url.searchParams.delete('account');
+      }
+
+      if (pushHistory) {
+        window.history.pushState({ tab: nextTab, accountId: nextAccountId }, '', url.toString());
+      } else {
+        window.history.replaceState({ tab: nextTab, accountId: nextAccountId }, '', url.toString());
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.tab) {
+        setActiveTabState(e.state.tab);
+        if (e.state.accountId) setSelectedAccountIdState(e.state.accountId);
+      } else {
+        const route = getInitialRoute();
+        setActiveTabState(route.tab);
+        setSelectedAccountIdState(route.accountId);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Reset entire state callback
   const handleResetDemoData = () => {
@@ -95,8 +146,7 @@ function MainApp() {
       setAccounts(INITIAL_ACCOUNTS);
       setContacts(INITIAL_CONTACTS);
       setAccessorials(INITIAL_ACCESSORIALS);
-      setSelectedAccountId('act_1');
-      setActiveTab('kanban');
+      navigateTo('kanban', 'act_1');
     }
   };
 
@@ -108,8 +158,7 @@ function MainApp() {
   };
 
   const handleSelectAccount = (accountId: string) => {
-    setSelectedAccountId(accountId);
-    setActiveTab('dashboard');
+    navigateTo('dashboard', accountId);
   };
 
   const handleUpdateAccount = async (updatedAccount: Account) => {
@@ -149,8 +198,7 @@ function MainApp() {
 
     setAccounts(prev => [...prev, newAct]);
     setAccessorials(prev => [...prev, newSOP]);
-    setSelectedAccountId(newId);
-    setActiveTab('dashboard');
+    navigateTo('dashboard', newId);
   };
 
   const handleAddContact = (contactDetails: Omit<Contact, 'id'>) => {
@@ -216,7 +264,7 @@ function MainApp() {
           {/* Tab Selection */}
           <div className="hidden sm:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
             <button
-              onClick={() => setActiveTab('kanban')}
+              onClick={() => navigateTo('kanban')}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeTab === 'kanban' 
                   ? 'bg-blue-600 text-white shadow-sm' 
@@ -228,7 +276,7 @@ function MainApp() {
             </button>
 
             <button
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => navigateTo('dashboard')}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeTab === 'dashboard' 
                   ? 'bg-blue-600 text-white shadow-sm' 
@@ -284,6 +332,17 @@ function MainApp() {
                 </span>
               </div>
             </div>
+
+            {session && (
+              <button
+                onClick={() => signOut()}
+                className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-800 transition cursor-pointer"
+                title={`Sign out (${session.user?.email || 'User'})`}
+                aria-label="Sign out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
         </div>
@@ -292,7 +351,7 @@ function MainApp() {
       {/* Mobile Tab bar */}
       <div className="flex sm:hidden bg-slate-900 border-b border-slate-950 px-2 py-1.5 overflow-x-auto gap-1 text-white select-none">
         <button
-          onClick={() => setActiveTab('kanban')}
+          onClick={() => navigateTo('kanban')}
           className={`flex-1 px-3 py-1.5 rounded text-xs font-bold text-center ${
             activeTab === 'kanban' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300'
           }`}
@@ -300,7 +359,7 @@ function MainApp() {
           Pipeline & Forms
         </button>
         <button
-          onClick={() => setActiveTab('dashboard')}
+          onClick={() => navigateTo('dashboard')}
           className={`flex-1 px-3 py-1.5 rounded text-xs font-bold text-center ${
             activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300'
           }`}
@@ -360,7 +419,7 @@ function MainApp() {
           <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-4 gap-2.5 mt-2.5">
             <button
               onClick={() => {
-                setActiveTab('kanban');
+                navigateTo('kanban');
               }}
               className="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-left text-[11px] font-medium text-slate-700 transition cursor-pointer hover:border-blue-400 group shadow-2xs"
             >
@@ -370,7 +429,7 @@ function MainApp() {
 
             <button
               onClick={() => {
-                setActiveTab('kanban');
+                navigateTo('kanban');
                 setTimeout(() => {
                   const target = document.getElementById('interactive_onboarding_workspace');
                   if (target) target.scrollIntoView({ behavior: 'smooth' });
@@ -384,8 +443,7 @@ function MainApp() {
 
             <button
               onClick={() => {
-                setSelectedAccountId('act_1');
-                setActiveTab('dashboard');
+                navigateTo('dashboard', 'act_1');
               }}
               className="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-left text-[11px] font-medium text-slate-700 transition cursor-pointer hover:border-blue-400 group shadow-2xs"
             >
@@ -395,8 +453,7 @@ function MainApp() {
 
             <button
               onClick={() => {
-                setSelectedAccountId('act_1');
-                setActiveTab('dashboard');
+                navigateTo('dashboard', 'act_1');
               }}
               className="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-left text-[11px] font-medium text-slate-700 transition cursor-pointer hover:border-blue-400 group shadow-2xs"
             >
@@ -430,7 +487,7 @@ function MainApp() {
                 accessorials={accessorials}
                 selectedAccountId={selectedAccountId}
                 activeProfile={activeProfile}
-                onSelectAccount={setSelectedAccountId}
+                onSelectAccount={(accId) => navigateTo('dashboard', accId)}
                 onUpdateAccount={handleUpdateAccount}
                 onAddContact={handleAddContact}
                 onDeleteContact={handleDeleteContact}

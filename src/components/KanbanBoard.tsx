@@ -579,8 +579,16 @@ export default function KanbanBoard({
                   </div>
                 ) : (
                   stageAccounts.map((account) => {
-                    const hazardAlert = account.alerts && account.alerts.some(a => a.type === 'danger');
+                    const dangerAlerts = account.alerts?.filter(a => a.type === 'danger') || [];
+                    const hazardAlert = dangerAlerts.length > 0;
+                    const alertTooltip = dangerAlerts.length > 0
+                      ? dangerAlerts.map(a => a.message || 'Strict delivery terms alert!').join(' • ')
+                      : 'Strict delivery terms alert!';
                     const isFormActive = selectedFormAccountId === account.id;
+
+                    const typeDisplay = account.equipmentType && account.loadType
+                      ? `${account.equipmentType} (${account.loadType})`
+                      : (account.equipmentType || account.loadType || 'Not set');
 
                     return (
                       <motion.div
@@ -594,7 +602,11 @@ export default function KanbanBoard({
                       >
                         {/* Red Flag indicator */}
                         {hazardAlert && (
-                          <div className="absolute top-3.5 right-3 text-red-500" title="Strict delivery terms alert!">
+                          <div 
+                            className="absolute top-3.5 right-3 text-red-500 cursor-help" 
+                            title={`Red Flag SOP Alert: ${alertTooltip}`}
+                            aria-label={`Red Flag SOP Alert: ${alertTooltip}`}
+                          >
                             <AlertTriangle className="w-4 h-4 animate-pulse" />
                           </div>
                         )}
@@ -602,9 +614,16 @@ export default function KanbanBoard({
                         <div className="space-y-2">
                           <div>
                             <span className="text-[10px] font-bold tracking-wider uppercase text-slate-405 bg-slate-100 px-2 py-0.5 rounded">
-                              {account.billToCode}
+                              {account.billToCode || 'No Bill-To Code'}
                             </span>
-                            <h4 className="font-bold text-slate-800 text-sm mt-1.5 group-hover:text-blue-600 transition-colors">
+                            <h4 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectAccount(account.id);
+                              }}
+                              className="font-bold text-slate-800 text-sm mt-1.5 hover:text-blue-600 cursor-pointer transition-colors"
+                              title={`Open Customer 360-View for ${account.name}`}
+                            >
                               {account.name}
                             </h4>
                           </div>
@@ -613,11 +632,11 @@ export default function KanbanBoard({
                           <div className="flex flex-col gap-1 text-[11px] text-slate-500 font-medium">
                             <div className="flex items-center gap-1">
                               <span className="text-slate-400">Terms:</span>
-                              <span className="font-semibold text-slate-700">{account.creditTerms}</span>
+                              <span className="font-semibold text-slate-700">{account.creditTerms || 'Not set'}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <span className="text-slate-400">Type:</span>
-                              <span className="font-semibold text-slate-700">{account.equipmentType} ({account.loadType})</span>
+                              <span className="font-semibold text-slate-700">{typeDisplay}</span>
                             </div>
                           </div>
 
@@ -627,7 +646,7 @@ export default function KanbanBoard({
                               <span>{account.documents.length} Files in Vault</span>
                               <button
                                 onClick={() => onSelectAccount(account.id)}
-                                className="inline-flex items-center gap-0.5 font-bold text-slate-700 hover:text-blue-600 transition-colors"
+                                className="inline-flex items-center gap-0.5 font-bold text-slate-700 hover:text-blue-600 transition-colors cursor-pointer"
                               >
                                 Details ➔
                               </button>

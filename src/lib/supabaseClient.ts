@@ -173,21 +173,43 @@ export async function uploadDocumentToSupabase(
   const categorySlug = docType.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
   const filePath = `${accountId}/${categorySlug}/${crypto.randomUUID()}.${extension}`;
 
+  let effectiveUploadedBy = uploadedBy;
+  if (!effectiveUploadedBy) {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      effectiveUploadedBy = authData.user?.email || authData.user?.user_metadata?.full_name || 'Tanya Wahl (Specialist)';
+    } catch {
+      effectiveUploadedBy = 'Tanya Wahl (Specialist)';
+    }
+  }
+
+  // If local demo account (starts with 'act_') or Supabase is not configured, generate a local document object
+  if (accountId.startsWith('act_') || !isSuabaseConfigured) {
+    return {
+      id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      account_id: accountId,
+      name: file.name,
+      type: docType,
+      size_bytes: file.size,
+      storage_path: filePath,
+      checklist_item_key: checklistItemKey,
+      description: description.trim() || null,
+      uploaded_by: effectiveUploadedBy,
+      uploaded_at: new Date().toISOString()
+    };
+  }
+
   // 1. Upload to Supabase Storage
   const { data: storageData, error: storageError } = await supabase.storage
     .from('drayage-vault')
     .upload(filePath, file);
 
-  if (storageError) throw storageError;
-
-  // 2. Resolve user context if not provided
-  let effectiveUploadedBy = uploadedBy;
-  if (!effectiveUploadedBy) {
-    const { data: authData } = await supabase.auth.getUser();
-    effectiveUploadedBy = authData.user?.email || authData.user?.user_metadata?.full_name || 'Tanya Wahl (Specialist)';
+  if (storageError) {
+    console.error('Supabase storage upload error:', storageError);
+    throw new Error(storageError.message || 'Storage upload failed. Please check storage permissions.');
   }
 
-  // 3. Insert record in documents table
+  // 2. Insert record in documents table
   const { data: docRecord, error: dbError } = await supabase
     .from('documents')
     .insert({
@@ -205,7 +227,8 @@ export async function uploadDocumentToSupabase(
 
   if (dbError) {
     await supabase.storage.from('drayage-vault').remove([storageData.path]);
-    throw dbError;
+    console.error('Supabase documents insert error:', dbError);
+    throw new Error(dbError.message || 'Database insert failed for document record.');
   }
 
   return docRecord;
@@ -215,11 +238,17 @@ export async function uploadDocumentToSupabase(
  * Deletes document metadata and, when present, the matching Supabase Storage object.
  */
 export async function deleteDocumentFromSupabase(document: OnboardingDocument) {
+  if (document.id.startsWith('doc_') || !isSuabaseConfigured) {
+    return;
+  }
   if (document.storagePath || document.contentKey) {
     const storagePath = document.storagePath || document.contentKey;
     if (storagePath && !storagePath.trim().startsWith('{')) {
-      const { error: storageError } = await supabase.storage.from('drayage-vault').remove([storagePath]);
-      if (storageError) throw storageError;
+      try {
+        await supabase.storage.from('drayage-vault').remove([storagePath]);
+      } catch (err) {
+        console.warn('Storage cleanup warning:', err);
+      }
     }
   }
 

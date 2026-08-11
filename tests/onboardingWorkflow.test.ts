@@ -88,3 +88,16 @@ test('generic onboarding rules source contains no known demo account branching o
   const source = await readFile(new URL('../src/onboardingRules.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /act_amazon|act_1|act_2|Tanya Wahl|2026-06-19/);
 });
+
+test('CustomerInquiry stage default checklist notes indicates pending review', async () => {
+  const { buildDefaultChecklist } = await import('../src/onboardingRules');
+  const inquiryAccount = {
+    ...createBlankOnboardingAccount('act_inquiry', 'Pacific Fresh Growers', 'PACFRESH'),
+    stage: 'CustomerInquiry' as const,
+    creditTerms: 'Prepaid' as const,
+    isNewProspect: false
+  };
+  const checklist = buildDefaultChecklist({ account: inquiryAccount });
+  assert.match(checklist.notes || '', /New inquiry received.*Pending credit review/);
+});
+

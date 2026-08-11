@@ -52,7 +52,9 @@ export function buildDefaultChecklist({
     workOrderReceived: isExistingAccount && account.stage === 'OngoingSupport',
     onboardingCallCompleted: isExistingAccount && (account.stage === 'OngoingSupport' || account.stage === 'OperationalKickoff'),
     notes: notes ?? (isExistingAccount
-      ? `Review process completed. Account is currently on stage: ${account.stage}. Credit terms approved at ${account.creditTerms}.`
+      ? (account.stage === 'CustomerInquiry'
+        ? `New inquiry received. Pending credit review and documentation requirements for ${account.name}.`
+        : `Review process in progress. Account is currently on stage: ${account.stage}. Credit terms set to ${account.creditTerms || 'Pending'}.`)
       : ''),
     completedBy,
     completedDate

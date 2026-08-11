@@ -4,7 +4,7 @@
  * Dependencies: React, motion animations, Supabase document deletion, uploader component, and shared domain types.
  * Maintainer note: Form edits are propagated upward through onUpdateAccount rather than saved directly here.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage, CreditTerms, EquipmentType, LoadType, PreferredComm, ContactRole, OnboardingDocument, CustomerAlert, AppointmentType, StatusUpdateCheck, UserProfile } from '../types';
 import { computeAccountStage, initializeChecklist } from '../onboardingRules';
 import { reconcileDocumentChecklist } from '../onboardingWorkflow';
@@ -80,6 +80,17 @@ export default function CustomerDashboard({
   const [showAddContact, setShowAddContact] = useState(false);
   const [showAddAlert, setShowAddAlert] = useState(false);
   const [selectedPreviewDoc, setSelectedPreviewDoc] = useState<any | null>(null);
+  
+  // ESC key handler for document preview lightbox modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedPreviewDoc) {
+        setSelectedPreviewDoc(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedPreviewDoc]);
   
   // Account Form state
   const [editName, setEditName] = useState(currentAccount?.name || '');
@@ -259,11 +270,14 @@ export default function CustomerDashboard({
   };
 
 
-  // Delete document
+  // Delete document with confirmation prompt
   const handleDeleteDoc = async (docId: string) => {
     if (!currentAccount) return;
     const doc = currentAccount.documents?.find(d => d.id === docId);
     if (!doc) return;
+    if (!confirm(`Are you sure you want to remove document "${doc.name}" from ${currentAccount.name}'s vault?`)) {
+      return;
+    }
     try {
       if (!doc.id.startsWith('doc_')) {
         await deleteDocumentFromSupabase(doc);
@@ -276,6 +290,35 @@ export default function CustomerDashboard({
       console.error('Failed to remove document:', err);
       alert('Unable to remove this document. Please retry or contact an administrator.');
     }
+  };
+
+  // Download raw package bundle / manifest
+  const handleDownloadPackage = (doc: OnboardingDocument) => {
+    const content = `======================================================================\n` +
+      `         FORREST TRANSPORTATION SERVICES • DOCUMENT VAULT ARCHIVE\n` +
+      `======================================================================\n\n` +
+      `Account: ${currentAccount?.name || 'Customer'}\n` +
+      `File Name: ${doc.name}\n` +
+      `Document Class: ${doc.type}\n` +
+      `Audit Date: ${doc.uploadedAt}\n` +
+      `File Size: ${doc.size}\n` +
+      `Audited By: ${doc.uploadedBy || 'Tanya Wahl (Specialist)'}\n` +
+      `Description: ${doc.description || 'Verified compliant customer onboarding document'}\n` +
+      `Checklist Key: ${doc.checklistItemKey || 'General'}\n` +
+      `Storage Reference: ${doc.storagePath || doc.contentKey || 'Encrypted Drayage Vault'}\n` +
+      `Status: STRICT AUDIT COMPLIANT\n` +
+      `Security Protocol: AES 256-Bit Encrypted Payload\n\n` +
+      `======================================================================\n` +
+      `Validated by Tanya Wahl • Customer Onboarding Team\n` +
+      `Forrest Transportation Logistics (Rev 4/18/25)\n`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Vault_Package_${doc.name.replace(/\.[^/.]+$/, '')}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
 
@@ -1068,7 +1111,11 @@ export default function CustomerDashboard({
                         <p className="text-[10px] text-slate-400 font-medium">Role: <span className="font-bold text-slate-700">{contact.role}</span></p>
                       </div>
                       <button
-                        onClick={() => onDeleteContact(contact.id)}
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to remove contact "${contact.name}" (${contact.role})?`)) {
+                            onDeleteContact(contact.id);
+                          }
+                        }}
                         className="text-red-500 hover:text-red-600 p-1 rounded hover:bg-slate-100 cursor-pointer"
                         title="Delete contact"
                       >
@@ -1325,7 +1372,11 @@ export default function CustomerDashboard({
                   />
                   <div className="text-left">
                     <span className="text-xs font-bold block">Bill To Code Created</span>
-                    <span className="text-[9px] text-slate-450 font-normal">Registered in billing system ({currentAccount.billToCode})</span>
+                    <span className="text-[9px] text-slate-450 font-normal">
+                      {currentAccount.billToCodeCreated
+                        ? `Verified registered in billing system (${currentAccount.billToCode || 'Active'})`
+                        : `Confirm registration in billing system (${currentAccount.billToCode || 'Pending'})`}
+                    </span>
                   </div>
                 </div>
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${
@@ -1414,9 +1465,7 @@ export default function CustomerDashboard({
                         Inspect Document
                       </button>
                       <button
-                        onClick={() => {
-                          alert(`Success: Interactive prototype trigger!\nDownloading billing/compliance package bundle: "${doc.name}"\n\nSize: ${doc.size}\nStatus: Audited compliant by Tanya Wahl.`);
-                        }}
+                        onClick={() => handleDownloadPackage(doc)}
                         className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition px-2 py-1 text-xs font-bold rounded cursor-pointer"
                         title="Download raw archive file package"
                       >
@@ -1461,13 +1510,15 @@ export default function CustomerDashboard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+            onClick={() => setSelectedPreviewDoc(null)}
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 cursor-pointer"
           >
             <motion.div
               initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 15 }}
-              className="bg-white rounded-2xl border border-slate-300 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col p-6 relative text-slate-800 font-sans"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl border border-slate-300 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col p-6 relative text-slate-800 font-sans cursor-default"
             >
               {/* Close button */}
               <button

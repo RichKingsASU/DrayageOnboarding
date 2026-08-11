@@ -382,13 +382,21 @@ export default function SecureDocumentUploader({
                 </div>
               </div>
 
-              <button
-                onClick={() => setProcessing(p => ({...p, isError: false}))}
-                className="text-rose-600 hover:text-rose-900 p-1 cursor-pointer"
-                title="Dismiss message"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={startUploadAndProcessing}
+                  className="bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold px-2.5 py-1 rounded text-[11px] transition cursor-pointer"
+                >
+                  Retry Upload
+                </button>
+                <button
+                  onClick={() => setProcessing(p => ({...p, isError: false}))}
+                  className="text-rose-600 hover:text-rose-900 p-1 cursor-pointer"
+                  title="Dismiss message"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

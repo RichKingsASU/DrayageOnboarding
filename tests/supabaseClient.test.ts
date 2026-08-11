@@ -74,3 +74,31 @@ test('normalized document uses canonical checklist mapping and preserves uploade
   assert.equal(document.description, 'Signed agreement from customer AP');
   assert.equal(document.size, '1.50 MB');
 });
+
+test('uploadDocumentToSupabase creates local record gracefully for demo account IDs', async () => {
+  const { uploadDocumentToSupabase } = await import('../src/lib/supabaseClient');
+  const file = new File(['mock content'], 'test_cert.pdf', { type: 'application/pdf' });
+  const result = await uploadDocumentToSupabase('act_demo_123', file, 'SOP Document', 'Demo test note', 'Tester (Specialist)');
+  
+  assert.ok(result.id.startsWith('doc_'));
+  assert.equal(result.name, 'test_cert.pdf');
+  assert.equal(result.type, 'SOP Document');
+  assert.equal(result.checklist_item_key, 'filesUploaded');
+  assert.equal(result.uploaded_by, 'Tester (Specialist)');
+  assert.equal(result.description, 'Demo test note');
+});
+
+test('deleteDocumentFromSupabase completes safely without throwing on demo documents', async () => {
+  const { deleteDocumentFromSupabase } = await import('../src/lib/supabaseClient');
+  const demoDoc = {
+    id: 'doc_12345',
+    name: 'test.pdf',
+    type: 'Other' as const,
+    uploadedAt: '2026-08-11',
+    size: '1.2 MB'
+  };
+  await assert.doesNotReject(async () => {
+    await deleteDocumentFromSupabase(demoDoc);
+  });
+});
+
