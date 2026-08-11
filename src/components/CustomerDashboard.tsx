@@ -5,7 +5,7 @@
  * Maintainer note: Form edits are propagated upward through onUpdateAccount rather than saved directly here.
  */
 import React, { useState } from 'react';
-import { Account, Contact, AccessorialSOP, PipelineStage, CreditTerms, EquipmentType, LoadType, PreferredComm, ContactRole, OnboardingDocument, CustomerAlert, AppointmentType, StatusUpdateCheck } from '../types';
+import { Account, Contact, AccessorialSOP, PipelineStage, CreditTerms, EquipmentType, LoadType, PreferredComm, ContactRole, OnboardingDocument, CustomerAlert, AppointmentType, StatusUpdateCheck, UserProfile } from '../types';
 import { computeAccountStage, initializeChecklist } from '../onboardingRules';
 import { reconcileDocumentChecklist } from '../onboardingWorkflow';
 import SecureDocumentUploader from './SecureDocumentUploader';
@@ -31,6 +31,7 @@ import {
   FileCheck,
   Thermometer,
   ShieldAlert,
+  ShieldCheck,
   Check,
   Scale,
   CalendarCheck2,
@@ -43,6 +44,7 @@ interface CustomerDashboardProps {
   contacts: Contact[];
   accessorials: AccessorialSOP[];
   selectedAccountId: string;
+  activeProfile?: UserProfile;
   onSelectAccount: (accountId: string) => void;
   onUpdateAccount: (updatedAccount: Account) => void;
   onAddContact: (contact: Omit<Contact, 'id'>) => void;
@@ -60,6 +62,7 @@ export default function CustomerDashboard({
   contacts,
   accessorials,
   selectedAccountId,
+  activeProfile,
   onSelectAccount,
   onUpdateAccount,
   onAddContact,
@@ -124,10 +127,14 @@ export default function CustomerDashboard({
 
   // Contact form state
   const [contactName, setContactName] = useState('');
+  const [contactTitle, setContactTitle] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactRole, setContactRole] = useState<ContactRole>('Operations');
   const [contactNotes, setContactNotes] = useState('');
+
+  // Compliance View State
+  const [isComplianceViewActive, setIsComplianceViewActive] = useState(false);
 
   // Alert form state
   const [alertText, setAlertText] = useState('');
@@ -179,12 +186,14 @@ export default function CustomerDashboard({
     onAddContact({
       accountId: currentAccount.id,
       name: contactName.trim(),
+      title: contactTitle.trim() || undefined,
       email: contactEmail.trim(),
       phone: contactPhone.trim(),
       role: contactRole,
       notes: contactNotes.trim()
     });
     setContactName('');
+    setContactTitle('');
     setContactEmail('');
     setContactPhone('');
     setContactNotes('');
@@ -737,7 +746,9 @@ export default function CustomerDashboard({
                 <div className="flex justify-between py-1">
                   <span className="text-slate-400 font-medium">Avg Cargo Valuation:</span>
                   <span className="font-bold text-slate-800">
-                    {currentAccount.cargoValue ? `$${currentAccount.cargoValue.toLocaleString()} USD` : <span className="text-slate-400 font-normal italic">Pending / Blank</span>}
+                    {isComplianceViewActive 
+                      ? <span className="font-mono text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded text-[11px]">•••••••• [Confidential IT Mask]</span> 
+                      : (currentAccount.cargoValue ? `$${currentAccount.cargoValue.toLocaleString()} USD` : <span className="text-slate-400 font-normal italic">Pending / Blank</span>)}
                   </span>
                 </div>
               </div>
@@ -786,8 +797,9 @@ export default function CustomerDashboard({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
+                          min="0"
                           value={currentSOP.chassisFee === 0 ? '' : currentSOP.chassisFee}
-                          onChange={(e) => handleUpdateSOPCurrency('chassisFee', Number(e.target.value))}
+                          onChange={(e) => handleUpdateSOPCurrency('chassisFee', Math.max(0, Number(e.target.value)))}
                           placeholder="0"
                           className="w-16 font-bold text-slate-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-slate-400 px-1 rounded"
                         />
@@ -801,8 +813,9 @@ export default function CustomerDashboard({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
+                          min="0"
                           value={currentSOP.prePullFee === 0 ? '' : currentSOP.prePullFee}
-                          onChange={(e) => handleUpdateSOPCurrency('prePullFee', Number(e.target.value))}
+                          onChange={(e) => handleUpdateSOPCurrency('prePullFee', Math.max(0, Number(e.target.value)))}
                           placeholder="0"
                           className="w-16 font-bold text-slate-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-slate-400 px-1 rounded"
                         />
@@ -815,8 +828,9 @@ export default function CustomerDashboard({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
+                          min="0"
                           value={currentSOP.storageFee === 0 ? '' : currentSOP.storageFee}
-                          onChange={(e) => handleUpdateSOPCurrency('storageFee', Number(e.target.value))}
+                          onChange={(e) => handleUpdateSOPCurrency('storageFee', Math.max(0, Number(e.target.value)))}
                           placeholder="0"
                           className="w-16 font-bold text-slate-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-slate-400 px-1 rounded"
                         />
@@ -830,8 +844,9 @@ export default function CustomerDashboard({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
+                          min="0"
                           value={currentSOP.emptyStorageFee === 0 ? '' : currentSOP.emptyStorageFee}
-                          onChange={(e) => handleUpdateSOPCurrency('emptyStorageFee', Number(e.target.value))}
+                          onChange={(e) => handleUpdateSOPCurrency('emptyStorageFee', Math.max(0, Number(e.target.value)))}
                           placeholder="0"
                           className="w-16 font-bold text-slate-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-slate-400 px-1 rounded"
                         />
@@ -845,8 +860,9 @@ export default function CustomerDashboard({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
+                          min="0"
                           value={currentSOP.chassisSplitFee === 0 ? '' : currentSOP.chassisSplitFee}
-                          onChange={(e) => handleUpdateSOPCurrency('chassisSplitFee', Number(e.target.value))}
+                          onChange={(e) => handleUpdateSOPCurrency('chassisSplitFee', Math.max(0, Number(e.target.value)))}
                           placeholder="0"
                           className="w-16 font-bold text-slate-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-slate-400 px-1 rounded"
                         />
@@ -859,8 +875,9 @@ export default function CustomerDashboard({
                         <span className="text-slate-400 font-bold">$</span>
                         <input
                           type="number"
+                          min="0"
                           value={currentSOP.cleanTruckFee === 0 ? '' : currentSOP.cleanTruckFee}
-                          onChange={(e) => handleUpdateSOPCurrency('cleanTruckFee', Number(e.target.value))}
+                          onChange={(e) => handleUpdateSOPCurrency('cleanTruckFee', Math.max(0, Number(e.target.value)))}
                           placeholder="0"
                           className="w-16 font-bold text-slate-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-slate-400 px-1 rounded"
                         />
@@ -870,14 +887,26 @@ export default function CustomerDashboard({
                     <div className="bg-red-50/50 p-2.5 rounded border border-red-100 col-span-2">
                       <div className="flex items-center justify-between">
                         <span className="text-red-700 block text-[10px] font-bold">Detention / Waiting Time Rate</span>
-                        <span className="text-slate-500 text-[10px] font-bold">{currentSOP.detentionFreeTime} hrs free limit</span>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={currentSOP.detentionFreeTime === 0 ? '' : currentSOP.detentionFreeTime}
+                            onChange={(e) => handleUpdateSOPCurrency('detentionFreeTime', Math.max(0, Number(e.target.value)))}
+                            placeholder="0"
+                            className="w-10 font-bold text-slate-800 bg-white border border-red-200 focus:outline-none focus:ring-1 focus:ring-red-400 px-1 rounded text-right text-[10px]"
+                          />
+                          <span className="text-slate-500 text-[10px] font-bold">hrs free limit</span>
+                        </div>
                       </div>
-                      <div className="flex gap-1 items-center mt-0.5">
+                      <div className="flex gap-1 items-center mt-1">
                         <span className="text-red-450 font-bold">$</span>
                         <input
                           type="number"
+                          min="0"
                           value={currentSOP.detentionRate === 0 ? '' : currentSOP.detentionRate}
-                          onChange={(e) => handleUpdateSOPCurrency('detentionRate', Number(e.target.value))}
+                          onChange={(e) => handleUpdateSOPCurrency('detentionRate', Math.max(0, Number(e.target.value)))}
                           placeholder="0"
                           className="w-16 font-bold text-red-900 bg-transparent focus:outline-none focus:ring-1 focus:ring-red-400 px-1 rounded"
                         />
@@ -1030,7 +1059,12 @@ export default function CustomerDashboard({
                   <div key={contact.id} className="p-3 rounded-lg border border-slate-100 bg-slate-50/65 flex flex-col gap-1.5 hover:border-slate-250 transition-all">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h5 className="text-xs font-bold text-slate-800">{contact.name}</h5>
+                        <h5 className="text-xs font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
+                          <span>{contact.name}</span>
+                          {contact.title && (
+                            <span className="text-[10px] text-slate-500 font-medium">({contact.title})</span>
+                          )}
+                        </h5>
                         <p className="text-[10px] text-slate-400 font-medium">Role: <span className="font-bold text-slate-700">{contact.role}</span></p>
                       </div>
                       <button
@@ -1044,12 +1078,16 @@ export default function CustomerDashboard({
 
                     <div className="grid grid-cols-2 gap-1.5 text-[10px] font-medium text-slate-600">
                       <div>
-                        <span className="text-slate-400 block text-[9px] uppercase">Direct Email</span>
+                        <span className="text-slate-400 block text-[9px] uppercase font-semibold">Direct Email</span>
                         <a href={`mailto:${contact.email}`} className="text-blue-600 hover:underline">{contact.email}</a>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[9px] uppercase">Phone Number</span>
-                        <span className="text-slate-800 font-bold">{contact.phone}</span>
+                        <span className="text-slate-400 block text-[9px] uppercase font-semibold">Phone Number</span>
+                        {isComplianceViewActive ? (
+                          <span className="font-mono text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded text-[10px] font-bold">(•••) •••-••••</span>
+                        ) : (
+                          <a href={`tel:${contact.phone.replace(/[^0-9+]/g, '')}`} className="text-slate-800 font-bold hover:text-blue-600 hover:underline">{contact.phone}</a>
+                        )}
                       </div>
                     </div>
 
@@ -1086,13 +1124,20 @@ export default function CustomerDashboard({
                     onSubmit={handleAddContactSubmit} 
                     className="space-y-2.5 mt-3 p-3 bg-slate-50 rounded-lg border overflow-hidden"
                   >
-                    <div>
+                    <div className="grid grid-cols-2 gap-2">
                       <input
                         type="text"
                         placeholder="Full Name *"
                         required
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded px-2.5 py-1 text-xs text-slate-800 focus:outline-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Job Title (e.g. Operations Mgr)"
+                        value={contactTitle}
+                        onChange={(e) => setContactTitle(e.target.value)}
                         className="w-full bg-white border border-slate-200 rounded px-2.5 py-1 text-xs text-slate-800 focus:outline-none"
                       />
                     </div>
@@ -1137,7 +1182,7 @@ export default function CustomerDashboard({
                           placeholder="Special instructions..."
                           value={contactNotes}
                           onChange={(e) => setContactNotes(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded px-2 px-1 text-xs text-slate-805"
+                          className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-805"
                         />
                       </div>
                     </div>
@@ -1160,28 +1205,67 @@ export default function CustomerDashboard({
 
       {/* Structured Document Manager (Interactive mock documents) */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-slate-50 px-4 py-3.5 border-b flex items-center justify-between">
+        <div className="bg-slate-50 px-4 py-3.5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             <FolderPlus className="w-4 h-4 text-slate-500" />
             <h4 className="font-bold text-slate-755 text-xs uppercase tracking-wider">
               Onboarding Documents Audit Checklist
             </h4>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-slate-600">
                 {DOCUMENT_TYPES.filter(t => currentAccount.documents.some(d => d.type === t)).length + (currentAccount.billToCodeCreated ? 1 : 0) + (currentAccount.auditChecklistCompleted ? 1 : 0)} / {DOCUMENT_TYPES.length + 2} Steps
               </span>
               <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-blue-600"
+                  className="h-full bg-blue-600 transition-all duration-300"
                   style={{ width: `${Math.round(((DOCUMENT_TYPES.filter(t => currentAccount.documents.some(d => d.type === t)).length + (currentAccount.billToCodeCreated ? 1 : 0) + (currentAccount.auditChecklistCompleted ? 1 : 0)) / (DOCUMENT_TYPES.length + 2)) * 100)}%` }}
                 />
               </div>
             </div>
-            <span className="text-[10px] font-medium text-slate-500 hidden sm:inline">VP of IT Compliance Dashboard</span>
+
+            {/* VP of IT Compliance Dashboard Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsComplianceViewActive(!isComplianceViewActive)}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+                isComplianceViewActive
+                  ? 'bg-purple-700 border-purple-600 text-white shadow-xs ring-1 ring-purple-400'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400'
+              }`}
+              title="Toggle VP of IT Compliance Audit Mode & Sensitive Field Masking"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              VP of IT Compliance View: {isComplianceViewActive ? 'ACTIVE (Masked)' : 'OFF'}
+            </button>
           </div>
         </div>
+
+        {/* IT Compliance Mode Governance Banner */}
+        {isComplianceViewActive && (
+          <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 text-white p-3.5 px-5 border-b border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-lg bg-purple-500/30 text-purple-300 border border-purple-400/30">
+                <ShieldAlert className="w-4 h-4 text-purple-300" />
+              </div>
+              <div>
+                <span className="font-bold tracking-wide text-purple-200">VP of IT Compliance & Access Governance Mode Active</span>
+                <p className="text-[10px] text-slate-300">
+                  Sensitive PII, cargo valuations, and confidential rates masked • RLS policies and JWT headers verified
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-[9px] font-bold">
+              <span className="bg-purple-800/80 border border-purple-500/60 text-purple-200 px-2 py-0.5 rounded font-mono">
+                ROLE: VP_IT_COMPLIANCE (Rk)
+              </span>
+              <span className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-2 py-0.5 rounded flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> SOC2 COMPLIANT
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
           

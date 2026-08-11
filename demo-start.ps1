@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# demo-start.ps1 — Start the OnDray CRM demo server
+# demo-start.ps1 -- Start the OnDray CRM demo server
 # Usage: .\demo-start.ps1
 # Run from the project root. The app will open at http://127.0.0.1:3000/
 
@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Cyan
-Write-Host "  OnDray — Drayage Customer Onboarding CRM" -ForegroundColor Cyan
+Write-Host "  OnDray -- Drayage Customer Onboarding CRM" -ForegroundColor Cyan
 Write-Host "  DEMO START" -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""

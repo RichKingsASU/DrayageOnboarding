@@ -91,10 +91,20 @@ export interface Contact {
   id: string;
   accountId: string;
   name: string;
+  title?: string;
   email: string;
   phone: string;
   role: ContactRole;
   notes?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  initials: string;
+  title: string;
 }
 
 export type MovementType = 'Import' | 'Export' | 'Street Turn';

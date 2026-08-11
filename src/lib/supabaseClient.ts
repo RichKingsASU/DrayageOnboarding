@@ -164,7 +164,8 @@ export async function uploadDocumentToSupabase(
   accountId: string,
   file: File,
   docType: OnboardingDocument['type'],
-  description = ''
+  description = '',
+  uploadedBy = ''
 ) {
   validateDocumentFile(file);
   const checklistItemKey = DOCUMENT_CHECKLIST_ITEM_BY_TYPE[docType] || null;
@@ -179,7 +180,14 @@ export async function uploadDocumentToSupabase(
 
   if (storageError) throw storageError;
 
-  // 2. Insert record in documents table
+  // 2. Resolve user context if not provided
+  let effectiveUploadedBy = uploadedBy;
+  if (!effectiveUploadedBy) {
+    const { data: authData } = await supabase.auth.getUser();
+    effectiveUploadedBy = authData.user?.email || authData.user?.user_metadata?.full_name || 'Tanya Wahl (Specialist)';
+  }
+
+  // 3. Insert record in documents table
   const { data: docRecord, error: dbError } = await supabase
     .from('documents')
     .insert({
@@ -190,6 +198,7 @@ export async function uploadDocumentToSupabase(
       storage_path: storageData.path,
       checklist_item_key: checklistItemKey,
       description: description.trim() || null,
+      uploaded_by: effectiveUploadedBy,
     })
     .select()
     .single();

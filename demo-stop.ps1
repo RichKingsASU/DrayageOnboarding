@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# demo-stop.ps1 — Gracefully stop the OnDray CRM demo server
+# demo-stop.ps1 -- Gracefully stop the OnDray CRM demo server
 # Usage: .\demo-stop.ps1
 
 Write-Host ""

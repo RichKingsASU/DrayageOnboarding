@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# demo-restart.ps1 — Restart the OnDray CRM dev server cleanly
+# demo-restart.ps1 -- Restart the OnDray CRM dev server cleanly
 # Usage: .\demo-restart.ps1
 # Kills any node process on port 3000 and restarts the Vite dev server.
 

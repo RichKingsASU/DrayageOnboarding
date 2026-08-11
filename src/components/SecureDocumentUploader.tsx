@@ -86,6 +86,7 @@ export default function SecureDocumentUploader({
 }: SecureDocumentUploaderProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const selectedFile = selectedFiles[0] || null;
+  const [selectedTemplate, setSelectedTemplate] = useState<typeof SAMPLE_TEMPLATES[0] | null>(null);
   const [customName, setCustomName] = useState<string>('');
   const [docType, setDocType] = useState<DocType>('Credit Application');
   const [description, setDescription] = useState('');
@@ -125,7 +126,22 @@ export default function SecureDocumentUploader({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      try { Array.from(e.dataTransfer.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.dataTransfer.files)); setProcessing(p => ({...p, isError: false})); } catch (err) { setProcessing({ isProcessing: false, isError: true, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
+      try { 
+        Array.from(e.dataTransfer.files).forEach(validateDocumentFile); 
+        setSelectedFiles(Array.from(e.dataTransfer.files)); 
+        setSelectedTemplate(null);
+        setProcessing(p => ({...p, isError: false})); 
+      } catch (err) { 
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setProcessing({ 
+          isProcessing: false, 
+          isError: true, 
+          step: 0, 
+          progress: 0, 
+          statusMessage: err instanceof Error ? err.message : 'Invalid file.' 
+        }); 
+        return; 
+      }
       if (!customName) {
         setCustomName(file.name.replace(/\.[^/.]+$/, ""));
       }
@@ -135,7 +151,22 @@ export default function SecureDocumentUploader({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      try { Array.from(e.target.files).forEach(validateDocumentFile); setSelectedFiles(Array.from(e.target.files)); setProcessing(p => ({...p, isError: false})); } catch (err) { setProcessing({ isProcessing: false, isError: true, step: 0, progress: 0, statusMessage: err instanceof Error ? err.message : 'Invalid file.' }); return; }
+      try { 
+        Array.from(e.target.files).forEach(validateDocumentFile); 
+        setSelectedFiles(Array.from(e.target.files)); 
+        setSelectedTemplate(null);
+        setProcessing(p => ({...p, isError: false})); 
+      } catch (err) { 
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setProcessing({ 
+          isProcessing: false, 
+          isError: true, 
+          step: 0, 
+          progress: 0, 
+          statusMessage: err instanceof Error ? err.message : 'Invalid file.' 
+        }); 
+        return; 
+      }
       if (!customName) {
         setCustomName(file.name.replace(/\.[^/.]+$/, ""));
       }
@@ -143,7 +174,9 @@ export default function SecureDocumentUploader({
   };
 
   const handleSelectTemplate = (tpl: typeof SAMPLE_TEMPLATES[0]) => {
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setSelectedFiles([]);
+    setSelectedTemplate(tpl);
     setCustomName(tpl.name.replace(/\.[^/.]+$/, ""));
     setDocType(tpl.type);
     setProcessing(p => ({...p, isError: false}));
@@ -152,7 +185,7 @@ export default function SecureDocumentUploader({
   const startUploadAndProcessing = async () => {
     const fileNameToUse = customName 
       ? (customName.endsWith('.pdf') ? customName : `${customName}.pdf`)
-      : (selectedFile ? selectedFile.name : `Drayage_Doc_${Date.now()}.pdf`);
+      : (selectedFile ? selectedFile.name : selectedTemplate ? selectedTemplate.name : `Drayage_Doc_${Date.now()}.pdf`);
 
     setProcessing({
       isProcessing: true,
@@ -165,7 +198,9 @@ export default function SecureDocumentUploader({
 
     try {
       // Step 1 & 2: Real Upload
-      const filesToUpload = selectedFiles.length ? selectedFiles : [new File(["dummy content"], fileNameToUse, { type: "application/pdf" })];
+      const filesToUpload = selectedFiles.length 
+        ? selectedFiles 
+        : [new File(["dummy content for " + fileNameToUse], fileNameToUse, { type: "application/pdf" })];
       const docRecords: any[] = [];
       for (const fileToUpload of filesToUpload) {
         docRecords.push(await uploadDocumentToSupabase(accountId, fileToUpload, docType, description));
@@ -228,6 +263,7 @@ export default function SecureDocumentUploader({
 
         // Reset form fields
         setSelectedFiles([]);
+        setSelectedTemplate(null);
         setCustomName('');
         setDescription('');
       }, 1000);
@@ -411,7 +447,7 @@ export default function SecureDocumentUploader({
           className={`border-2 border-dashed rounded-xl p-5 text-center transition cursor-pointer relative ${
             isDragging 
               ? 'border-blue-500 bg-blue-50/80 scale-[0.99]' 
-              : selectedFile 
+              : (selectedFile || selectedTemplate)
                 ? 'border-emerald-400 bg-emerald-50/30' 
                 : 'border-slate-250 bg-slate-50/60 hover:bg-slate-100/80 hover:border-slate-350'
           }`}
@@ -426,8 +462,8 @@ export default function SecureDocumentUploader({
           />
 
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className={`p-3 rounded-full ${selectedFile ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
-              {selectedFile ? <FileCheck className="w-6 h-6" /> : <UploadCloud className="w-6 h-6" />}
+            <div className={`p-3 rounded-full ${(selectedFile || selectedTemplate) ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
+              {(selectedFile || selectedTemplate) ? <FileCheck className="w-6 h-6" /> : <UploadCloud className="w-6 h-6" />}
             </div>
 
             {selectedFile ? (
@@ -438,6 +474,16 @@ export default function SecureDocumentUploader({
                 </p>
                 <span className="mt-1 inline-block text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
                   File Ready for Compliance Audit
+                </span>
+              </div>
+            ) : selectedTemplate ? (
+              <div>
+                <p className="text-xs font-bold text-slate-800">{selectedTemplate.name}</p>
+                <p className="text-[10px] text-slate-500">
+                  Size: {selectedTemplate.size} • Type: {selectedTemplate.type} (Pre-loaded Template)
+                </p>
+                <span className="mt-1 inline-block text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                  Template Ready for Compliance Audit
                 </span>
               </div>
             ) : (
@@ -465,7 +511,7 @@ export default function SecureDocumentUploader({
                 type="button"
                 onClick={() => handleSelectTemplate(tpl)}
                 className={`p-2 rounded-lg border text-left text-xs transition cursor-pointer flex flex-col justify-between ${
-                  customName === tpl.name.replace(/\.[^/.]+$/, "")
+                  (selectedTemplate?.name === tpl.name || (!selectedFile && customName === tpl.name.replace(/\.[^/.]+$/, "")))
                     ? 'bg-blue-50 border-blue-400 text-blue-900 ring-1 ring-blue-400'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
                 }`}

@@ -5,7 +5,7 @@
  * Maintainer note: UI state is hydrated from Supabase first, with mock/local data retained as a fallback path.
  */
 import React, { useState, useEffect } from 'react';
-import { Account, Contact, AccessorialSOP, PipelineStage } from './types';
+import { Account, Contact, AccessorialSOP, PipelineStage, UserProfile } from './types';
 import { 
   INITIAL_ACCOUNTS, 
   INITIAL_CONTACTS, 
@@ -29,7 +29,8 @@ import {
   AlertOctagon,
   WifiOff,
   Wifi,
-  FlaskConical
+  FlaskConical,
+  UserCheck
 } from 'lucide-react';
 
 const BUILD_COMMIT = import.meta.env.VITE_COMMIT_SHA || 'dev';
@@ -38,12 +39,40 @@ const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
 const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'required';
 const SUPABASE_REF = (import.meta.env.VITE_SUPABASE_URL || '').replace('https://', '').split('.')[0] || 'unknown';
 
+export const PROFILES: UserProfile[] = [
+  {
+    id: 'usr_rk',
+    name: 'Rich Kings',
+    email: 'rich.kings@forrestlogistics.com',
+    role: 'vp_it_compliance',
+    initials: 'Rk',
+    title: 'VP of IT & Compliance Officer'
+  },
+  {
+    id: 'usr_tw',
+    name: 'Tanya Wahl',
+    email: 'tanya.wahl@forrestlogistics.com',
+    role: 'onboarding_specialist',
+    initials: 'TW',
+    title: 'Customer Onboarding Lead'
+  },
+  {
+    id: 'usr_ar',
+    name: 'Alex Rivera',
+    email: 'alex.rivera@forrestlogistics.com',
+    role: 'billing_ops',
+    initials: 'AR',
+    title: 'Billing & Operations Lead'
+  }
+];
+
 /**
  * Renders the primary onboarding CRM shell and wires account selection, persistence, and tab navigation.
  */
 function MainApp() {
   const [activeTab, setActiveTab] = useState<'kanban' | 'dashboard'>('kanban');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('act_1');
+  const [activeProfile, setActiveProfile] = useState<UserProfile>(PROFILES[0]);
 
   const { accounts, accessorials: syncedAccessorials, loading, error: accountsError, isRealtimeConnected, retry: retryAccounts, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
   const { session, signOut } = useAuth();
@@ -211,7 +240,7 @@ function MainApp() {
             </button>
           </div>
 
-          {/* Quick Resets & Presenter Info */}
+          {/* Quick Resets & Profile Switcher */}
           <div className="flex items-center gap-2.5">
             <button
               onClick={handleResetDemoData}
@@ -224,10 +253,36 @@ function MainApp() {
             
             <span className="text-slate-700 border-l h-5 hidden sm:block"></span>
             
-            <div className="hidden lg:flex flex-col text-right">
-              <span className="text-[10px] text-slate-400 font-bold block">SPECIALIST:</span>
-              <span className="text-[11px] font-bold text-white uppercase tracking-wider">Tanya Wahl</span>
-              <span className="text-[9px] text-blue-300 font-semibold block leading-tight">Customer Onboarding Lead</span>
+            {/* User Profile & Specialist Switcher */}
+            <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1">
+              <div 
+                className="w-7 h-7 rounded-lg bg-blue-600 font-extrabold text-white text-xs flex items-center justify-center shadow-xs border border-blue-400/40 shrink-0"
+                title={`Active Profile: ${activeProfile.name} (${activeProfile.initials}) - Role: ${activeProfile.role}`}
+              >
+                ({activeProfile.initials})
+              </div>
+              <div className="flex flex-col text-left">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">SPECIALIST:</span>
+                  <select
+                    value={activeProfile.id}
+                    onChange={(e) => {
+                      const selected = PROFILES.find(p => p.id === e.target.value);
+                      if (selected) setActiveProfile(selected);
+                    }}
+                    className="bg-transparent text-[11px] font-bold text-white uppercase tracking-wider focus:outline-none cursor-pointer"
+                  >
+                    {PROFILES.map(p => (
+                      <option key={p.id} value={p.id} className="bg-slate-900 text-white normal-case">
+                        {p.name} ({p.initials})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <span className="text-[9px] text-blue-300 font-semibold block leading-tight truncate max-w-[130px] sm:max-w-none">
+                  {activeProfile.title}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -374,6 +429,7 @@ function MainApp() {
                 contacts={contacts}
                 accessorials={accessorials}
                 selectedAccountId={selectedAccountId}
+                activeProfile={activeProfile}
                 onSelectAccount={setSelectedAccountId}
                 onUpdateAccount={handleUpdateAccount}
                 onAddContact={handleAddContact}

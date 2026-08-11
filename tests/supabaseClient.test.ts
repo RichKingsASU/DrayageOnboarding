@@ -36,15 +36,41 @@ test('document validation rejects disallowed MIME types even when extension is a
   assert.throws(() => validateDocumentFile(file), /Unsupported MIME type/);
 });
 
-test('normalized document uses canonical checklist mapping', async () => {
+test('document validation rejects files exceeding 15MB', () => {
+  const largeFile = new File([new Uint8Array(16 * 1024 * 1024)], 'large_document.pdf', { type: 'application/pdf' });
+  assert.throws(() => validateDocumentFile(largeFile), /File is too large/);
+});
+
+test('document validation rejects disallowed extensions like .zip and .exe', () => {
+  const zipFile = new File(['content'], 'archive.zip', { type: 'application/zip' });
+  assert.throws(() => validateDocumentFile(zipFile), /Unsupported file type/);
+
+  const exeFile = new File(['binary'], 'installer.exe', { type: 'application/x-msdownload' });
+  assert.throws(() => validateDocumentFile(exeFile), /Unsupported file type/);
+});
+
+test('document validation accepts valid files under 15MB', () => {
+  const pdfFile = new File(['valid content'], 'contract.pdf', { type: 'application/pdf' });
+  assert.doesNotThrow(() => validateDocumentFile(pdfFile));
+
+  const pngFile = new File(['png data'], 'coi.png', { type: 'image/png' });
+  assert.doesNotThrow(() => validateDocumentFile(pngFile));
+});
+
+test('normalized document uses canonical checklist mapping and preserves uploaded_by and description', async () => {
   const { normalizeDocument } = await import('../src/lib/supabaseClient');
   const document = normalizeDocument({
     id: 'doc-id',
     name: 'credit.pdf',
     type: 'Credit Application',
     uploaded_at: '2026-08-05',
-    size_bytes: 1024,
+    uploaded_by: 'Rich Kings (Rk)',
+    description: 'Signed agreement from customer AP',
+    size_bytes: 1024 * 1024 * 1.5,
     storage_path: 'account/credit.pdf',
   });
   assert.equal(document.checklistItemKey, 'creditApp');
+  assert.equal(document.uploadedBy, 'Rich Kings (Rk)');
+  assert.equal(document.description, 'Signed agreement from customer AP');
+  assert.equal(document.size, '1.50 MB');
 });
