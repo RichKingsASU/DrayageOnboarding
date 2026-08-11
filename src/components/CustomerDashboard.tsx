@@ -365,6 +365,18 @@ export default function CustomerDashboard({
     }
   };
 
+  if (!currentAccount) {
+    return (
+      <div className="bg-white rounded-2xl p-12 border border-slate-200 text-center space-y-4 shadow-xs">
+        <Building2 className="w-12 h-12 text-slate-300 mx-auto" />
+        <h3 className="text-lg font-bold text-slate-800">No Account Selected</h3>
+        <p className="text-sm text-slate-500 max-w-md mx-auto">
+          Please select an account from the Onboarding Pipeline or create a new prospect to view the 360 profile.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div id="customer_360_view" className="space-y-6">
       

@@ -14,6 +14,7 @@ interface AuthContextType {
   error: Error | null;
   retry: () => void;
   signOut: () => Promise<void>;
+  enterDemoMode: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,7 +86,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    setSession(null);
+    setUser(null);
+  };
+
+  const enterDemoMode = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (!error && data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        return;
+      }
+    } catch {}
+    const mockUser: any = {
+      id: 'usr_tw',
+      email: 'tanya.wahl@forrestlogistics.com',
+      user_metadata: { full_name: 'Tanya Wahl' }
+    };
+    setUser(mockUser);
+    setSession({
+      access_token: 'demo_token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      refresh_token: 'demo_refresh',
+      user: mockUser
+    } as any);
   };
 
   const value = {
@@ -98,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     retry: initialize,
     signOut,
+    enterDemoMode
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

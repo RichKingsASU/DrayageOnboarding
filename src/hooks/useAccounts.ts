@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { normalizeAccount, normalizeSOP, supabase } from '../lib/supabaseClient';
 import { Account, AccessorialSOP } from '../types';
+import { INITIAL_ACCOUNTS, INITIAL_ACCESSORIALS } from '../mockData';
 import { useAuth } from './useAuth';
 
 /**
@@ -14,9 +15,9 @@ import { useAuth } from './useAuth';
  */
 export function useAccounts() {
   const { session } = useAuth();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [accessorials, setAccessorials] = useState<AccessorialSOP[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [accounts, setAccounts] = useState<Account[]>(INITIAL_ACCOUNTS);
+  const [accessorials, setAccessorials] = useState<AccessorialSOP[]>(INITIAL_ACCESSORIALS);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
@@ -25,8 +26,6 @@ export function useAccounts() {
 
   const fetchAccounts = useCallback(async () => {
     if (!session) {
-      setAccounts([]);
-      setAccessorials([]);
       setLoading(false);
       return;
     }
@@ -48,8 +47,8 @@ export function useAccounts() {
     if (err) {
       console.error('Error fetching accounts:', err);
       setError(err);
-      // We do NOT clear accounts here on fetch failure, so we retain the last known good state
-    } else if (data) {
+      // Retain last known good state on error
+    } else if (data && data.length > 0) {
       setAccounts(data.map(normalizeAccount));
       setAccessorials(data.flatMap((row: any) => (row.sops || []).map(normalizeSOP)));
     }
