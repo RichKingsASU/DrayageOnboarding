@@ -398,23 +398,25 @@ function MainApp() {
             <span className="hover:underline cursor-pointer" onClick={() => setShowWalkthrough(true)}>Show Demonstration Guide</span>
           </div>
         </div>
-        {/* Build diagnostics */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-400 font-mono">
-          <span>ENV: {APP_ENV}</span>
-          <span>·</span>
-          <span>AUTH: {AUTH_MODE}</span>
-          <span>·</span>
-          <span>PROJECT: {SUPABASE_REF}</span>
-          <span>·</span>
-          <span>COMMIT: {BUILD_COMMIT.slice(0, 8)}</span>
-          <span>·</span>
-          <span>BUILT: {BUILD_TIME.split('T')[0]}</span>
-          <span>·</span>
-          <span className={`flex items-center gap-1 ${isRealtimeConnected ? 'text-green-500' : 'text-slate-400'}`}>
-            {isRealtimeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-            Realtime
-          </span>
-        </div>
+        {/* Build diagnostics — only visible in local development */}
+        {APP_ENV === 'development' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-400 font-mono">
+            <span>ENV: {APP_ENV}</span>
+            <span>·</span>
+            <span>AUTH: {AUTH_MODE}</span>
+            <span>·</span>
+            <span>PROJECT: {SUPABASE_REF}</span>
+            <span>·</span>
+            <span>COMMIT: {BUILD_COMMIT.slice(0, 8)}</span>
+            <span>·</span>
+            <span>BUILT: {BUILD_TIME.split('T')[0]}</span>
+            <span>·</span>
+            <span className={`flex items-center gap-1 ${isRealtimeConnected ? 'text-green-500' : 'text-slate-400'}`}>
+              {isRealtimeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+              Realtime
+            </span>
+          </div>
+        )}
       </footer>
 
     </div>
