@@ -61,8 +61,30 @@ export async function uploadDocumentToAzure(
   notes?: string,
   uploadedBy?: string
 ) {
-  console.log('Upload to Azure Blob Storage not yet implemented. Stubbed for:', file.name);
-  return { data: { id: 'stub_id', path: 'stub/path' }, error: null };
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('account', accountId);
+  formData.append('type', docType);
+  if (notes) formData.append('description', notes);
+
+  const res = await fetch('/api/v1/ondray/onboarding-documents/upload/', {
+    method: 'POST',
+    body: formData,
+    // Add auth headers if required, or let cookies handle it
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Upload failed with status ${res.status}`);
+  }
+
+  const data = await res.json();
+  // Map Django fields to expected fields
+  return {
+    ...data,
+    size_bytes: parseInt(data.size || '0', 10),
+    uploaded_at: data.created_at || new Date().toISOString(),
+  };
 }
 
 export async function deleteDocumentFromAzure(doc: any) {

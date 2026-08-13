@@ -4,15 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=127.0.0.1",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "preview": "webpack serve --mode production",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "test:e2e:demo": "cross-env VITE_AUTH_MODE=auto_demo playwright test",
-    "test:e2e:prod": "cross-env VITE_AUTH_MODE=required playwright test",
+    "test:e2e:demo": "cross-env AUTH_MODE=auto_demo playwright test",
+    "test:e2e:prod": "cross-env AUTH_MODE=required playwright test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,6 +27,7 @@
     "@babel/core": "^8.0.1",
     "@babel/preset-env": "^8.0.2",
     "@babel/preset-react": "^8.0.1",
+    "@babel/preset-typescript": "^8.0.1",
     "@playwright/test": "^1.62.1",
     "@types/node": "^22.14.0",
     "babel-loader": "^10.1.1",

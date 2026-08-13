@@ -4,4 +4,4 @@
  * Dependencies: Tailwind CSS via the Vite plugin pipeline.
  * Maintainer note: Global styling currently enters through Tailwind's import directive only.
  */
-@import "tailwindcss";
+@import 'bootstrap/dist/css/bootstrap.min.css';

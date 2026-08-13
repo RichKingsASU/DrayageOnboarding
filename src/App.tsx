@@ -34,11 +34,11 @@ import {
   LogOut
 } from 'lucide-react';
 
-const BUILD_COMMIT = import.meta.env.VITE_COMMIT_SHA || 'dev';
-const BUILD_TIME = import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
-const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
-const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'required';
-const SUPABASE_REF = (import.meta.env.VITE_SUPABASE_URL || '').replace('https://', '').split('.')[0] || 'unknown';
+const BUILD_COMMIT = process.env.COMMIT_SHA || 'dev';
+const BUILD_TIME = process.env.BUILD_TIME || new Date().toISOString();
+const APP_ENV = process.env.APP_ENV || 'development';
+const AUTH_MODE = process.env.AUTH_MODE || 'required';
+const SUPABASE_REF = (process.env.SUPABASE_URL || '').replace('https://', '').split('.')[0] || 'unknown';
 
 export const PROFILES: UserProfile[] = [
   {

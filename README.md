@@ -6,9 +6,12 @@ Drayage Customer Onboarding CRM is a React/Vite application for managing drayage
 
 ## Architecture and stack
 
-- React 19, TypeScript, Vite, Tailwind CSS, and Supabase JavaScript client.
-- Supabase local development for Postgres, Storage, Realtime, Auth, migrations, seed data, and RLS tests.
-- Azure migration artifacts for future PostgreSQL Flexible Server, Blob Storage, Web PubSub, and Data API Builder work.
+Frontend: React + Webpack + Babel + Bootstrap
+Backend: Django
+Database: PostgreSQL
+Auth: Django sessions/RBAC
+Storage: Django-managed storage, FileSystemStorage for development
+Enterprise: read-only SQL Server adapters
 
 ## Prerequisites
 
