@@ -9,6 +9,7 @@ import { normalizeAccount, normalizeSOP } from '../lib/azureClient';
 import { Account, AccessorialSOP } from '../types';
 import { INITIAL_ACCOUNTS, INITIAL_ACCESSORIALS } from '../mockData';
 import { useAuth } from './useAuth';
+import { fetchApi } from '../apiClient';
 
 /**
  * Fetches onboarding accounts/accessorial SOPs and subscribes to Supabase realtime account changes.
@@ -32,18 +33,16 @@ export function useAccounts() {
     
     setLoading(true);
     setError(null);
-    const { data, err } = await fetch('/api/Account')
-      .then(res => res.json())
-      .then(data => ({ data: data.value, err: null })) // Assuming DAB standard format
-      .catch(error => ({ data: null, err: error }));
-
-    if (err) {
+    try {
+      const data = await fetchApi('/ondray/accounts/');
+      if (data && data.length > 0) {
+        setAccounts(data.map(normalizeAccount));
+        setAccessorials(data.flatMap((row: any) => (row.sops || []).map(normalizeSOP)));
+      }
+    } catch (err: any) {
       console.error('Error fetching accounts:', err);
       setError(err);
       // Retain last known good state on error
-    } else if (data && data.length > 0) {
-      setAccounts(data.map(normalizeAccount));
-      setAccessorials(data.flatMap((row: any) => (row.sops || []).map(normalizeSOP)));
     }
     setLoading(false);
   }, [session]);

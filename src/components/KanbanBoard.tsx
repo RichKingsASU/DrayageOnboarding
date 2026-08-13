@@ -47,7 +47,7 @@ const STAGES: { key: PipelineStage; label: string; color: string; desc: string; 
   { 
     key: 'CustomerInquiry', 
     label: 'Customer Inquiry', 
-    color: 'bg-blue-50/70 border-blue-200 text-blue-700 hover:bg-blue-100/40', 
+    color: 'bg-primary bg-opacity-10 border-primary border-opacity-25 text-primary hover:bg-primary bg-opacity-10', 
     desc: 'New leads & pricing requests',
     icon: PhoneCall
   },
@@ -61,7 +61,7 @@ const STAGES: { key: PipelineStage; label: string; color: string; desc: string; 
   { 
     key: 'AccountSetup', 
     label: 'Account Setup', 
-    color: 'bg-slate-50/80 border-slate-205 text-slate-700 hover:bg-slate-100/40', 
+    color: 'bg-slate-50/80 border-slate-205 text-dark hover:bg-slate-100/40', 
     desc: 'SOP mapping & document audit',
     icon: Layers
   },
@@ -75,7 +75,7 @@ const STAGES: { key: PipelineStage; label: string; color: string; desc: string; 
   { 
     key: 'OngoingSupport', 
     label: 'Active & Ongoing Support', 
-    color: 'bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100/40', 
+    color: 'bg-success bg-opacity-10/70 border-success border-opacity-25 text-success hover:bg-success bg-opacity-25/40', 
     desc: 'Regular billing & dispatch',
     icon: TrendingUp
   }
@@ -429,43 +429,43 @@ export default function KanbanBoard({
     <div id="onboarding_kanban_section" className="space-y-6">
       {/* Metrics Banner */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-lg bg-blue-50 text-blue-600">
+        <div className="bg-white rounded p-5 border border-secondary border-opacity-10 shadow-sm d-d-flex align-items-center gap-4">
+          <div className="p-3 rounded bg-primary bg-opacity-10 text-primary">
             <Building2 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">Total CRM Accounts</p>
-            <h3 className="text-2xl font-bold text-slate-800">{accounts.length}</h3>
+            <p className="small text-secondary fw-medium tracking-wide uppercase">Total CRM Accounts</p>
+            <h3 className="h3 fw-bold text-dark">{accounts.length}</h3>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-lg bg-indigo-50 text-indigo-600">
+        <div className="bg-white rounded p-5 border border-secondary border-opacity-10 shadow-sm d-d-flex align-items-center gap-4">
+          <div className="p-3 rounded bg-indigo-50 text-indigo-600">
             <Layers className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">In Onboarding</p>
-            <h3 className="text-2xl font-bold text-slate-800">{inPipeline}</h3>
+            <p className="small text-secondary fw-medium tracking-wide uppercase">In Onboarding</p>
+            <h3 className="h3 fw-bold text-dark">{inPipeline}</h3>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-600">
+        <div className="bg-white rounded p-5 border border-secondary border-opacity-10 shadow-sm d-d-flex align-items-center gap-4">
+          <div className="p-3 rounded bg-success bg-opacity-10 text-success">
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">Fully Onboarded</p>
-            <h3 className="text-2xl font-bold text-slate-800">{totalOnboarded}</h3>
+            <p className="small text-secondary fw-medium tracking-wide uppercase">Fully Onboarded</p>
+            <h3 className="h3 fw-bold text-dark">{totalOnboarded}</h3>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="p-3 rounded-lg bg-indigo-50 text-indigo-600">
+        <div className="bg-white rounded p-5 border border-secondary border-opacity-10 shadow-sm d-d-flex align-items-center gap-4">
+          <div className="p-3 rounded bg-indigo-50 text-indigo-600">
             <FileSpreadsheet className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">Avg. Deal Volume</p>
-            <h3 className="text-2xl font-bold text-slate-800">
+            <p className="small text-secondary fw-medium tracking-wide uppercase">Avg. Deal Volume</p>
+            <h3 className="h3 fw-bold text-dark">
               ${(accounts.reduce((acc, current) => acc + (current.cargoValue || 0), 0) / accounts.length / 1000).toFixed(0)}K
             </h3>
           </div>
@@ -473,16 +473,16 @@ export default function KanbanBoard({
       </div>
 
       {/* Header Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="d-d-flex flex-column md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Customer Onboarding Pipeline</h2>
-          <p className="text-sm text-slate-500">Drag & drop cards to progress stage, or manage their onboarding compliance templates below</p>
+          <h2 className="h4 fw-bold text-dark">Customer Onboarding Pipeline</h2>
+          <p className="small text-secondary">Drag & drop cards to progress stage, or manage their onboarding compliance templates below</p>
         </div>
         
         <div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="inline-flex items-center gap-2 bg-slate-900 border border-slate-950 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm hover:bg-slate-800 hover:-translate-y-0.5 transition cursor-pointer"
+            className="inline-d-d-flex align-items-center gap-2 bg-dark border border-slate-950 text-white small fw-semibold px-4 py-2.5 rounded shadow-sm hover:bg-dark text-white hover:-translate-y-0.5 transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add Prospect Account
@@ -497,44 +497,44 @@ export default function KanbanBoard({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-slate-50 p-5 rounded-xl border border-slate-200"
+            className="bg-slate-50 p-5 rounded border border-secondary border-opacity-25"
           >
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
-                <label className="block text-xs font-semibold text-slate-650 uppercase tracking-widest mb-1.5">Company Name *</label>
+                <label className="block small fw-semibold text-slate-650 uppercase tracking-widest mb-1.5">Company Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Western Wood Products"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-455"
+                  className="w-100 bg-white border border-slate-250 rounded px-3 py-2 small text-dark focus:outline-none focus:ring-1 focus:ring-slate-455"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-650 uppercase tracking-widest mb-1.5">Bill-To Code (Optional)</label>
+                <label className="block small fw-semibold text-slate-650 uppercase tracking-widest mb-1.5">Bill-To Code (Optional)</label>
                 <input
                   type="text"
                   maxLength={8}
                   placeholder="e.g. WESTWOOD"
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value)}
-                  className="w-full bg-white border border-slate-250 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-455"
+                  className="w-100 bg-white border border-slate-250 rounded px-3 py-2 small text-dark focus:outline-none focus:ring-1 focus:ring-slate-455"
                 />
               </div>
 
-              <div className="flex gap-2">
+              <div className="d-flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-slate-800 text-white text-sm font-semibold py-2 px-4 rounded-lg hover:bg-slate-700 cursor-pointer text-center"
+                  className="flex-fill bg-dark text-white text-white small fw-semibold py-2 px-4 rounded hover:bg-slate-700 cursor-pointer text-center"
                 >
                   Create & Drop in Pipeline
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="bg-white border border-slate-200 text-slate-600 text-sm font-semibold py-2 px-3 rounded-lg hover:bg-slate-100 cursor-pointer"
+                  className="bg-white border border-secondary border-opacity-25 text-slate-600 small fw-semibold py-2 px-3 rounded hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -580,30 +580,30 @@ export default function KanbanBoard({
                 className="bg-white rounded-2xl border border-slate-205 shadow-md overflow-hidden font-sans"
               >
                 {/* Header Banner */}
-                <div className="bg-slate-900 border-b border-slate-950 p-4.5 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded bg-blue-600 text-white">
+                <div className="bg-dark border-b border-slate-950 p-4.5 text-white d-d-flex flex-column md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="d-d-flex align-items-center gap-3">
+                    <div className="p-2 rounded btn-primary text-white">
                       <FileText className="w-5.5 h-5.5" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm tracking-tight">Onboarding Forms & Document Workspace</span>
-                        <span className="bg-blue-500/20 border border-blue-500 text-blue-300 text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded uppercase font-mono">
+                      <div className="d-d-flex align-items-center gap-2">
+                        <span className="fw-bold small tracking-tight">Onboarding Forms & Document Workspace</span>
+                        <span className="bg-primary bg-opacity-100/20 border border-primary text-blue-300 text-[9px] fw-bold tracking-widest px-1.5 py-0.5 rounded uppercase font-mono">
                           Tanya Wahl Active
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="small text-secondary mt-0.5">
                         Filling digital compliance checklists and meeting audits for customer: <strong className="text-white">{currentAcc.name}</strong>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 w-full md:w-auto self-stretch select-none md:self-auto">
-                    <span className="text-xs text-slate-400 font-medium hidden sm:inline">Swap Customer:</span>
+                  <div className="d-d-flex align-items-center gap-3 w-100 md:w-auto self-stretch select-none md:self-auto">
+                    <span className="small text-secondary fw-medium hidden sm:inline">Swap Customer:</span>
                     <select
                       value={selectedFormAccountId}
                       onChange={(e) => setSelectedFormAccountId(e.target.value)}
-                      className="bg-slate-800 text-white border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold flex-1 md:flex-initial"
+                      className="bg-dark text-white text-white border border-slate-700 small px-2.5 py-1.5 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 fw-bold flex-fill md:flex-initial"
                     >
                       {accounts.map(acc => (
                         <option key={acc.id} value={acc.id}>{acc.name} ({acc.billToCode})</option>
@@ -613,14 +613,14 @@ export default function KanbanBoard({
                 </div>
 
                 {/* Sub Tab selection */}
-                <div className="border-b border-slate-200 bg-slate-50 px-4.5 py-2.5 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex gap-2.5">
+                <div className="border-b border-secondary border-opacity-25 bg-slate-50 px-4.5 py-2.5 d-d-flex flex-wrap items-center justify-between gap-4">
+                  <div className="d-flex gap-2.5">
                     <button
                       onClick={() => setActiveFormTab('checklist')}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+                      className={`px-3.5 py-1.5 rounded small fw-bold transition d-d-flex align-items-center gap-1.5 border cursor-pointer ${
                         activeFormTab === 'checklist'
-                          ? 'bg-white border-slate-300 text-slate-850 shadow-sm'
-                          : 'bg-transparent border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'bg-white border-secondary border-opacity-50 text-slate-850 shadow-sm'
+                          : 'bg-transparent border-transparent text-secondary hover:text-dark'
                       }`}
                     >
                       <ClipboardCheck className={`w-4 h-4 ${activeFormTab === 'checklist' ? 'text-blue-550' : ''}`} />
@@ -629,10 +629,10 @@ export default function KanbanBoard({
 
                     <button
                       onClick={() => setActiveFormTab('external')}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+                      className={`px-3.5 py-1.5 rounded small fw-bold transition d-d-flex align-items-center gap-1.5 border cursor-pointer ${
                         activeFormTab === 'external'
-                          ? 'bg-white border-slate-300 text-slate-850 shadow-sm'
-                          : 'bg-transparent border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'bg-white border-secondary border-opacity-50 text-slate-850 shadow-sm'
+                          : 'bg-transparent border-transparent text-secondary hover:text-dark'
                       }`}
                     >
                       <PhoneCall className={`w-4 h-4 ${activeFormTab === 'external' ? 'text-blue-550' : ''}`} />
@@ -641,10 +641,10 @@ export default function KanbanBoard({
 
                     <button
                       onClick={() => setActiveFormTab('internal')}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+                      className={`px-3.5 py-1.5 rounded small fw-bold transition d-d-flex align-items-center gap-1.5 border cursor-pointer ${
                         activeFormTab === 'internal'
-                          ? 'bg-white border-slate-300 text-slate-850 shadow-sm'
-                          : 'bg-transparent border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'bg-white border-secondary border-opacity-50 text-slate-850 shadow-sm'
+                          : 'bg-transparent border-transparent text-secondary hover:text-dark'
                       }`}
                     >
                       <UserCheck className={`w-4 h-4 ${activeFormTab === 'internal' ? 'text-blue-550' : ''}`} />
@@ -652,19 +652,19 @@ export default function KanbanBoard({
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="d-d-flex align-items-center gap-2">
                     <button
                       onClick={handleDirectDownloadTXT}
-                      className="bg-white border border-slate-205 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1 transition cursor-pointer"
+                      className="bg-white border border-slate-205 py-1.5 px-3 rounded small fw-bold text-dark hover:bg-slate-50 d-d-flex align-items-center gap-1 transition cursor-pointer"
                       title="Download clean plain-text template file"
                     >
-                      <Download className="w-3.5 h-3.5 text-slate-500" />
+                      <Download className="w-3.5 h-3.5 text-secondary" />
                       Download Forms TXT
                     </button>
 
                     <button
                       onClick={handlePublishToVault}
-                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-1.5 px-4 rounded-lg flex items-center gap-1 shadow-sm transition cursor-pointer border border-blue-500/20"
+                      className="btn-primary hover:bg-primary bg-opacity-100 text-white fw-bold small py-1.5 px-4 rounded d-d-flex align-items-center gap-1 shadow-sm transition cursor-pointer border border-primary/20"
                     >
                       <Printer className="w-3.5 h-3.5" />
                       Sign & Publish to Vault
@@ -674,17 +674,17 @@ export default function KanbanBoard({
 
                 {/* Success Banner */}
                 {successPublishMessage && (
-                  <div className="m-4 mx-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs font-semibold flex items-start gap-2.5 animate-flash">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="m-4 mx-6 p-4 rounded bg-success bg-opacity-10 border border-success border-opacity-25 text-emerald-950 small fw-semibold d-d-flex align-items-start gap-2.5 animate-flash">
+                    <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold text-emerald-900">Signed Document Exported Successfully</p>
-                      <p className="font-medium text-emerald-700 mt-1">{successPublishMessage}</p>
+                      <p className="fw-bold text-success">Signed Document Exported Successfully</p>
+                      <p className="fw-medium text-success mt-1">{successPublishMessage}</p>
                     </div>
                   </div>
                 )}
 
                 {/* FORM WORKSPACE PAPER GRID */}
-                <div className="p-4 bg-light d-flex justify-content-center" style={{ minHeight: '460px' }}>
+                <div className="p-4 bg-light d-d-flex justify-content-center" style={{ minHeight: '460px' }}>
               <OnboardingForm
                 currentAcc={currentAcc}
                 activeFormTab={activeFormTab}

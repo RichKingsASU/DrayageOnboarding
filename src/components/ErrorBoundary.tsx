@@ -33,24 +33,24 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render(): React.ReactNode {
     if ((this as any).state?.hasError) {
       return (
-        <div className="bg-white rounded-xl p-8 border border-red-200 shadow-sm text-center space-y-4">
-          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+        <div className="bg-white rounded p-4 border border-danger shadow-sm text-center d-flex flex-column gap-3 mx-auto mt-4" style={{maxWidth: '500px'}}>
+          <div className="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center mx-auto" style={{width: '48px', height: '48px'}}>
             <AlertOctagon className="w-6 h-6" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="h5 fw-semibold text-dark mb-0">
             {(this as any).props?.fallbackTitle ?? 'This section could not be displayed'}
           </h2>
-          <p className="text-sm text-slate-500">Your data has not been changed.</p>
-          <div className="flex gap-3 justify-center">
+          <p className="small text-secondary mb-0">Your data has not been changed.</p>
+          <div className="d-flex gap-3 justify-content-center mt-2">
             <button
               onClick={() => (this as any).setState({ hasError: false, error: null })}
-              className="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition"
+              className="btn btn-dark btn-sm fw-medium px-4 py-2"
             >
               Try Again
             </button>
             <button
-              onClick={() => { window.location.href = '/'; }}
-              className="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition"
+              onClick={() => (this as any).setState({ hasError: false, error: null })}
+              className="btn btn-outline-secondary btn-sm fw-medium px-4 py-2"
             >
               Return to Pipeline
             </button>

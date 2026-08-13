@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 // Mock auth client removed
 import { useAuth } from '../hooks/useAuth';
-import { Compass, Mail, Lock, AlertOctagon, Loader2, Sparkles, Building2 } from 'lucide-react';
+import { Compass, Mail, Lock, AlertOctagon, Loader2, Sparkles } from 'lucide-react';
 
 export default function Login() {
   const { enterDemoMode } = useAuth();
@@ -32,56 +32,63 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-md w-full border border-slate-100">
-        <div className="bg-slate-900 p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-blue-500/20 p-3 rounded-xl border border-blue-400/30">
-              <Compass className="w-10 h-10 text-blue-400" />
+    <div className="vh-100 d-flex align-items-center justify-content-center p-4 bg-light">
+      <div className="bg-white rounded shadow w-100 border border-secondary border-opacity-25" style={{maxWidth: '400px'}}>
+        <div className="bg-dark p-4 text-center border-bottom border-secondary">
+          <div className="d-flex justify-content-center mb-3">
+            <div className="bg-primary bg-opacity-25 p-3 rounded border border-primary border-opacity-50 shadow-sm">
+              <Compass className="text-primary" style={{width: '40px', height: '40px'}} />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Forrest Logistics CRM</h1>
-          <p className="text-slate-400 text-sm font-medium">Customer Onboarding & Compliance Suite</p>
+          <h1 className="h4 fw-bolder text-white mb-2">Forrest Logistics CRM</h1>
+          <p className="text-light small fw-medium mb-0">Customer Onboarding & Compliance Suite</p>
         </div>
         
-        <div className="p-8 space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-800">Sign In</h2>
-            <p className="text-xs text-slate-500 mt-1">Authenticate with your team credentials or enter as a specialist</p>
+        <div className="p-4">
+          <div className="mb-4">
+            <h2 className="h5 fw-bold text-dark">Sign In</h2>
+            <p className="small text-secondary mt-1 mb-0">
+              Authenticate with your team credentials or enter as a specialist.
+            </p>
           </div>
           
           {error && (
-            <div className="p-4 bg-red-50 text-red-700 rounded-lg flex items-start gap-3 border border-red-100">
-              <AlertOctagon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <p className="text-sm font-medium">{error}</p>
+            <div className="p-3 mb-4 bg-danger bg-opacity-10 text-danger rounded d-flex align-items-start gap-3 border border-danger border-opacity-25 shadow-sm">
+              <AlertOctagon className="flex-shrink-0 mt-1" style={{width: '20px', height: '20px'}} />
+              <p className="small fw-semibold mb-0">{error}</p>
             </div>
           )}
           
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="d-flex flex-column gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
-              <div className="relative">
-                <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <label className="form-label small fw-bold text-dark mb-1" htmlFor="email">Email Address</label>
+              <div className="position-relative">
+                <Mail className="text-secondary position-absolute top-50 translate-middle-y ms-3" style={{width: '20px', height: '20px'}} />
                 <input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors text-sm"
-                  placeholder="tanya.wahl@forrestlogistics.com"
+                  className="form-control ps-5 py-2 small shadow-sm"
+                  placeholder="name@forrestlogistics.com"
                   required
                 />
               </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
-              <div className="relative">
-                <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <label className="form-label small fw-bold text-dark mb-0" htmlFor="password">Password</label>
+                <a href="#" className="small fw-semibold text-primary text-decoration-none">Forgot Password?</a>
+              </div>
+              <div className="position-relative">
+                <Lock className="text-secondary position-absolute top-50 translate-middle-y ms-3" style={{width: '20px', height: '20px'}} />
                 <input
+                  id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors text-sm"
+                  className="form-control ps-5 py-2 small shadow-sm"
                   placeholder="••••••••"
                   required
                 />
@@ -91,30 +98,31 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+              className="btn btn-primary w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mt-2"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+              {loading ? <Loader2 className="spinner-border spinner-border-sm" /> : 'Sign In'}
             </button>
           </form>
 
           {/* Quick Demo Access Divider */}
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">or instant demo</span>
-            <div className="flex-grow border-t border-slate-200"></div>
+          <div className="position-relative d-flex py-4 align-items-center">
+            <div className="flex-grow-1 border-top border-secondary border-opacity-25"></div>
+            <span className="mx-3 small fw-bold text-secondary text-uppercase" style={{letterSpacing: '1px'}}>Developer Access</span>
+            <div className="flex-grow-1 border-top border-secondary border-opacity-25"></div>
           </div>
 
           <button
             type="button"
             onClick={handleDemoAccess}
             disabled={loading}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-200 cursor-pointer text-sm"
+            className="btn btn-light w-100 fw-semibold py-2 d-flex align-items-center justify-content-center gap-2 border border-secondary border-opacity-25 shadow-sm small"
           >
-            <Sparkles className="w-4 h-4 text-blue-600" />
-            Launch Demo Workspace (Instant Access)
+            <Sparkles className="text-primary" style={{width: '16px', height: '16px'}} />
+            Launch Demo Workspace
           </button>
         </div>
       </div>
     </div>
   );
 }
+
