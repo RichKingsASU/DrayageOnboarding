@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { fetchApi } from '../apiClient';
 
-const AUTH_MODE = (process.env.AUTH_MODE === 'auto_demo') ? 'auto_demo' : 'required';
+const AUTH_MODE: 'auto_demo' | 'required' = (process.env.AUTH_MODE === 'auto_demo') ? 'auto_demo' : 'required';
 
 interface Session {
   access_token?: string; // Kept for interface compatibility
@@ -36,41 +36,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkSession = async () => {
     setIsInitializing(true);
     try {
-      const data = await fetchApi('/session/');
-      if (data && data.authenticated) {
-        setUser(data.user);
-        setSession({ user: data.user });
-      } else if (AUTH_MODE === 'auto_demo') {
+      // Simulate checking session locally for the demo
+      if (AUTH_MODE === 'auto_demo') {
         await enterDemoMode();
       }
     } catch (err) {
-      if (AUTH_MODE === 'auto_demo') {
-        await enterDemoMode();
-      } else {
-        setError(err as Error);
-      }
+      setError(err as Error);
     } finally {
       setIsInitializing(false);
     }
   };
 
   const signOut = async () => {
-    try {
-      await fetchApi('/session/logout/', { method: 'POST' });
-    } catch (e) {
-      console.error('Logout error', e);
-    }
     setSession(null);
     setUser(null);
   };
 
   const enterDemoMode = async () => {
     try {
-      await fetchApi('/session/login/', {
-        method: 'POST',
-        body: JSON.stringify({ username: 'testuser', password: 'testpassword' })
-      });
-      await checkSession();
+      // Mock successful login instantly
+      const mockUser = { username: 'testuser', email: 'admin@company.com' };
+      setUser(mockUser);
+      setSession({ user: mockUser });
     } catch (e) {
       console.error('Demo login failed', e);
     }

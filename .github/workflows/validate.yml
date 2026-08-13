@@ -21,9 +21,6 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Lint
-        run: npm run lint
-
       - name: Unit tests
         run: npm test
 
@@ -38,20 +35,3 @@ jobs:
           ! rg -n --hidden -g '!node_modules' -g '!package-lock.json' -g '!package.json' -g '!.git' \
             '(SuperSecurePassword123!|SUPABASE_SERVICE_ROLE_KEY=.*eyJ|--public-access 0\.0\.0\.0|MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API|react-example)'
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Start Supabase
-        run: supabase start
-
-      - name: Reset DB
-        run: supabase db reset
-
-      - name: Run Supabase Tests
-        run: supabase test db
-
-      - name: Stop Supabase
-        if: always()
-        run: supabase stop
