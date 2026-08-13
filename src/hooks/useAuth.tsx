@@ -1,12 +1,15 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabaseClient';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 const AUTH_MODE = (import.meta.env.VITE_AUTH_MODE === 'auto_demo') ? 'auto_demo' : 'required';
 
+interface Session {
+  access_token: string;
+  user: any;
+}
+
 interface AuthContextType {
   session: Session | null;
-  user: User | null;
+  user: any | null;
   isInitializing: boolean;
   isAutoAuthenticating: boolean;
   isAuthenticated: boolean;
@@ -21,87 +24,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isAutoAuthenticating, setIsAutoAuthenticating] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const autoAuthLock = useRef(false);
-
-  const initialize = async () => {
-    try {
-      setIsInitializing(true);
-      setError(null);
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) throw sessionError;
-
-      if (currentSession) {
-        setSession(currentSession);
-        setUser(currentSession.user);
-        setIsInitializing(false);
-        return;
-      }
-
-      if (AUTH_MODE === 'auto_demo') {
-        if (autoAuthLock.current) return;
-        autoAuthLock.current = true;
-        setIsAutoAuthenticating(true);
-        setIsInitializing(false);
-        
-        const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
-        if (authError) throw authError;
-
-        // Provision demo workspace
-        const { error: rpcError } = await supabase.rpc('ensure_demo_workspace');
-        if (rpcError) {
-          console.error('Failed to provision demo workspace', rpcError);
-          throw rpcError;
-        }
-
-        autoAuthLock.current = false;
-        setIsAutoAuthenticating(false);
-      } else {
-        setIsInitializing(false);
-      }
-    } catch (err: any) {
-      console.error('Auth initialization error:', err);
-      setError(err);
-      setIsInitializing(false);
-      setIsAutoAuthenticating(false);
-      autoAuthLock.current = false;
-    }
-  };
 
   useEffect(() => {
-    initialize();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+    // Stubbed Azure AD authentication initialization
+    setIsInitializing(false);
+    
+    if (AUTH_MODE === 'auto_demo') {
+      enterDemoMode();
+    }
   }, []);
 
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch {}
     setSession(null);
     setUser(null);
   };
 
   const enterDemoMode = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInAnonymously();
-      if (!error && data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
-        return;
-      }
-    } catch {}
     const mockUser: any = {
       id: 'usr_tw',
       email: 'tanya.wahl@forrestlogistics.com',
@@ -109,23 +49,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setUser(mockUser);
     setSession({
-      access_token: 'demo_token',
-      token_type: 'bearer',
-      expires_in: 3600,
-      refresh_token: 'demo_refresh',
+      access_token: 'azure_demo_token',
       user: mockUser
-    } as any);
+    });
   };
 
   const value = {
     session,
     user,
     isInitializing,
-    isAutoAuthenticating,
+    isAutoAuthenticating: false,
     isAuthenticated: !!session,
     authMode: AUTH_MODE,
-    error,
-    retry: initialize,
+    error: null,
+    retry: () => {},
     signOut,
     enterDemoMode
   };

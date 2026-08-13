@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+// Mock auth client removed
 import { useAuth } from '../hooks/useAuth';
 import { Compass, Mail, Lock, AlertOctagon, Loader2, Sparkles, Building2 } from 'lucide-react';
 
@@ -15,13 +15,11 @@ export default function Login() {
     setLoading(true);
     setError(null);
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      setError(error.message);
+    // Mock login for now
+    if (email && password) {
+      await enterDemoMode();
+    } else {
+      setError('Invalid credentials');
     }
     setLoading(false);
   };

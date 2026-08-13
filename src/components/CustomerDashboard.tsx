@@ -9,7 +9,7 @@ import { Account, Contact, AccessorialSOP, PipelineStage, CreditTerms, Equipment
 import { computeAccountStage, initializeChecklist } from '../onboardingRules';
 import { reconcileDocumentChecklist } from '../onboardingWorkflow';
 import SecureDocumentUploader from './SecureDocumentUploader';
-import { deleteDocumentFromSupabase } from '../lib/supabaseClient';
+import { deleteDocumentFromAzure as deleteDocumentFromSupabase } from '../lib/azureClient';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Building2, 

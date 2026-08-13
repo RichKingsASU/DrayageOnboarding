@@ -5,7 +5,7 @@
  * Maintainer note: Realtime updates trigger debounced refetches to keep related records consistent.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { normalizeAccount, normalizeSOP, supabase } from '../lib/supabaseClient';
+import { normalizeAccount, normalizeSOP } from '../lib/azureClient';
 import { Account, AccessorialSOP } from '../types';
 import { INITIAL_ACCOUNTS, INITIAL_ACCESSORIALS } from '../mockData';
 import { useAuth } from './useAuth';
@@ -32,17 +32,10 @@ export function useAccounts() {
     
     setLoading(true);
     setError(null);
-    const { data, err } = await supabase
-      .from('accounts')
-      .select(`
-        *,
-        sops:accessorial_sops(*),
-        contacts(*),
-        documents(*),
-        alerts:customer_alerts(*)
-      `)
-      .order('created_at', { ascending: false })
-      .then(res => ({ data: res.data, err: res.error }));
+    const { data, err } = await fetch('/api/Account')
+      .then(res => res.json())
+      .then(data => ({ data: data.value, err: null })) // Assuming DAB standard format
+      .catch(error => ({ data: null, err: error }));
 
     if (err) {
       console.error('Error fetching accounts:', err);
@@ -72,25 +65,27 @@ export function useAccounts() {
       }, 150);
     };
 
-    // Realtime WebSocket Channel using a unique name for this hook instance
-    const channel = supabase
-      .channel(channelNameRef.current)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, scheduleFetchAccounts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, scheduleFetchAccounts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'accessorial_sops' }, scheduleFetchAccounts)
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          if (isMounted) setIsRealtimeConnected(true);
-        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-          if (isMounted) setIsRealtimeConnected(false);
-          if (err) console.error('Accounts realtime subscription error:', status, err);
-        }
-      });
+    // Azure Web PubSub placeholder
+    const ws = new WebSocket('ws://localhost:8080/stub-pubsub'); // Stub URL
+    ws.onmessage = (event) => {
+      // Trigger refetch on relevant message
+      scheduleFetchAccounts();
+    };
+    ws.onopen = () => {
+      if (isMounted) setIsRealtimeConnected(true);
+    };
+    ws.onerror = (err) => {
+      if (isMounted) setIsRealtimeConnected(false);
+      console.error('Azure Web PubSub realtime subscription error:', err);
+    };
+    ws.onclose = () => {
+      if (isMounted) setIsRealtimeConnected(false);
+    };
 
     return () => {
       isMounted = false;
       if (refetchTimer) clearTimeout(refetchTimer);
-      supabase.removeChannel(channel);
+      ws.close();
     };
   }, [fetchAccounts, session]);
 

@@ -24,7 +24,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { DOCUMENT_ALLOWED_EXTENSIONS, DOCUMENT_MAX_BYTES, uploadDocumentToSupabase, validateDocumentFile } from '../lib/supabaseClient';
+import { DOCUMENT_ALLOWED_EXTENSIONS, DOCUMENT_MAX_BYTES, uploadDocumentToAzure as uploadDocumentToSupabase, validateDocumentFile } from '../lib/azureClient';
 
 interface SecureDocumentUploaderProps {
   accountName: string;

@@ -11,7 +11,7 @@ import {
   INITIAL_CONTACTS, 
   INITIAL_ACCESSORIALS 
 } from './mockData';
-import { accountUpdatePayload, supabase, isSuabaseConfigured } from './lib/supabaseClient';
+import { accountUpdatePayload, isAzureConfigured } from './lib/azureClient';
 import { useAccounts } from './hooks/useAccounts';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import Login from './components/Login';
@@ -153,8 +153,12 @@ function MainApp() {
   const handleUpdateAccountStage = async (accountId: string, newStage: PipelineStage) => {
     // Optimistic UI update
     setAccounts(prev => prev.map(a => a.id === accountId ? { ...a, stage: newStage } : a));
-    // Persist to Supabase
-    await supabase.from('accounts').update({ stage: newStage }).eq('id', accountId);
+    // Persist to Azure DAB
+    await fetch(`/api/Account/id/${accountId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: newStage })
+    }).catch(err => console.error('Failed to update stage in Azure:', err));
   };
 
   const handleSelectAccount = (accountId: string) => {
@@ -164,8 +168,16 @@ function MainApp() {
   const handleUpdateAccount = async (updatedAccount: Account) => {
     setAccounts(prev => prev.map(a => a.id === updatedAccount.id ? updatedAccount : a));
     if (!updatedAccount.id.startsWith('act_')) {
-      const { error } = await supabase.from('accounts').update(accountUpdatePayload(updatedAccount)).eq('id', updatedAccount.id);
-      if (error) console.error('Failed to persist account update:', error);
+      try {
+        const res = await fetch(`/api/Account/id/${updatedAccount.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(accountUpdatePayload(updatedAccount))
+        });
+        if (!res.ok) console.error('Failed to persist account update to Azure:', await res.text());
+      } catch (error) {
+        console.error('Failed to persist account update to Azure:', error);
+      }
     }
   };
 
@@ -234,8 +246,16 @@ function MainApp() {
         delivery_rules: updatedSOP.deliveryRules,
         updated_at: new Date().toISOString()
       };
-      const { error } = await supabase.from('accessorial_sops').update(payload).eq('id', updatedSOP.id);
-      if (error) console.error('Failed to persist SOP update:', error);
+      try {
+        const res = await fetch(`/api/AccessorialSOP/id/${updatedSOP.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) console.error('Failed to persist SOP update to Azure:', await res.text());
+      } catch (error) {
+        console.error('Failed to persist SOP update to Azure:', error);
+      }
     }
   };
 
@@ -551,8 +571,8 @@ function ConfigErrorScreen() {
 }
 
 export default function App() {
-  // Gate the entire app on Supabase configuration being present.
-  if (!isSuabaseConfigured) {
+  // Gate the entire app on Azure configuration being present.
+  if (!isAzureConfigured) {
     return <ConfigErrorScreen />;
   }
 
