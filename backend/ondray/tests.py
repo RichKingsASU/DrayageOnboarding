@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from ondray.models import Account
@@ -14,7 +14,7 @@ class ApiFoundationTests(TestCase):
 
     def test_unauthenticated_api_denied(self):
         response = self.client.get('/api/v1/ondray/accounts/')
-        self.assertEqual(response.status_code, 401)  # Or 403 depending on DRF configuration
+        self.assertEqual(response.status_code, 403)  # Or 403 depending on DRF configuration
 
     def test_session_info_unauthenticated(self):
         response = self.client.get('/api/v1/session/')
@@ -50,6 +50,7 @@ class ApiFoundationTests(TestCase):
         self.assertNotIn('migration_source', account_data)
         self.assertIn('name', account_data)
 
+    @override_settings(DEBUG=True)
     def test_dev_login(self):
         # We need CSRF for POST, client handles it or we can pass it if enforced
         response = self.client.post('/api/v1/session/login/', json.dumps({

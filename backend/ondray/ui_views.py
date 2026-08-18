@@ -66,6 +66,7 @@ def dashboard_view(request, account_id=None):
             return redirect('dashboard_account', account_id=selected_account['id'])
         
     contacts = OnboardingService.get_contacts(selected_account['id'] if selected_account else None)
+    lanes = OnboardingService.get_lanes(selected_account['id'] if selected_account else None)
     compliance_data = OnboardingService.get_compliance_data(selected_account['id'] if selected_account else None)
     
     # Check if we should show the edit form
@@ -80,16 +81,22 @@ def dashboard_view(request, account_id=None):
         
     alert_form = AlertForm()
     doc_form = DocumentUploadForm()
+    from .forms import ContactForm, LaneForm
+    contact_form = ContactForm()
+    lane_form = LaneForm()
 
     context = {
         'active_tab': 'dashboard',
         'accounts': accounts,
         'selected_account': selected_account,
         'contacts': contacts,
+        'lanes': lanes,
         'compliance_data': compliance_data,
         'edit_form': edit_form,
         'alert_form': alert_form,
         'doc_form': doc_form,
+        'contact_form': contact_form,
+        'lane_form': lane_form,
         'show_edit_form': show_edit_form
     }
     return render(request, 'dashboard.html', context)
@@ -100,6 +107,22 @@ def dashboard_account_edit(request, account_id):
         if form.is_valid():
             OnboardingService.update_account_details(account_id, form.cleaned_data)
             return redirect('dashboard_account', account_id=account_id)
+    return redirect('dashboard_account', account_id=account_id)
+
+def account_add_contact(request, account_id):
+    from .forms import ContactForm
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            OnboardingService.add_contact(account_id, form.cleaned_data)
+    return redirect('dashboard_account', account_id=account_id)
+
+def account_add_lane(request, account_id):
+    from .forms import LaneForm
+    if request.method == 'POST':
+        form = LaneForm(request.POST)
+        if form.is_valid():
+            OnboardingService.add_lane(account_id, form.cleaned_data)
     return redirect('dashboard_account', account_id=account_id)
 
 def account_add_alert(request, account_id):
@@ -147,4 +170,14 @@ def update_compliance_item(request, account_id, item_id):
         status = request.POST.get('status')
         if status:
             OnboardingService.update_compliance_item(account_id, item_id, status)
+    return redirect('dashboard_account', account_id=account_id)
+
+def update_meetings(request, account_id):
+    if request.method == 'POST':
+        data = {
+            'internalMeetingDate': request.POST.get('internalMeetingDate'),
+            'externalMeetingDate': request.POST.get('externalMeetingDate'),
+            'notes': request.POST.get('notes')
+        }
+        OnboardingService.update_meetings(account_id, data)
     return redirect('dashboard_account', account_id=account_id)

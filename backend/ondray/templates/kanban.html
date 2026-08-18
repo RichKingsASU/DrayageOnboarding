@@ -110,8 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => card.style.opacity = '0.5', 0);
         });
         card.addEventListener('dragend', () => {
-            draggedCard.style.opacity = '1';
-            draggedCard = null;
+            if (draggedCard) {
+                draggedCard.style.opacity = '1';
+                draggedCard = null;
+            }
         });
     });
 
@@ -132,17 +134,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const newStageId = column.dataset.stageId;
             const accountId = draggedCard.dataset.accountId;
 
-            const placeholder = zone.querySelector('.empty-placeholder');
-            if (placeholder) placeholder.style.display = 'none';
-            
-            zone.appendChild(draggedCard);
+            // Optional: Show loading state on card
+            const originalText = draggedCard.innerText;
+            draggedCard.style.opacity = '0.5';
 
-            // POST to update backend
+            // POST to update backend first
             const formData = new FormData();
             formData.append('action', 'update_stage');
             formData.append('account_id', accountId);
             formData.append('new_stage', newStageId);
-            // Need CSRF token
+            
             const csrfToken = '{{ csrf_token }}';
             
             fetch(window.location.href, {
@@ -151,9 +152,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             }).then(response => {
                 if(!response.ok) {
-                    alert('Failed to update stage.');
-                    window.location.reload();
+                    alert('Failed to update stage. Reverting...');
+                    draggedCard.style.opacity = '1';
+                    draggedCard = null;
+                } else {
+                    // Update DOM ONLY on success
+                    const placeholder = zone.querySelector('.empty-placeholder');
+                    if (placeholder) placeholder.style.display = 'none';
+                    zone.appendChild(draggedCard);
+                    draggedCard.style.opacity = '1';
+                    draggedCard = null;
                 }
+            }).catch(err => {
+                alert('Network error. Reverting...');
+                draggedCard.style.opacity = '1';
+                draggedCard = null;
             });
         });
     });

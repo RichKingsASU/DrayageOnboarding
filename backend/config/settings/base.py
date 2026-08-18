@@ -1,9 +1,21 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'unsafe-secret')
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+load_dotenv(BASE_DIR.parent / '.env')
+
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("No DJANGO_SECRET_KEY set for Django application")
+
+DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
+allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',')] if allowed_hosts_env else []
+
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

@@ -29,5 +29,29 @@
         {% else %}
             <p class="text-muted small mb-0 text-center">No compliance items available.</p>
         {% endif %}
+
+        <hr class="my-4">
+        
+        <h4 class="h6 fw-bold mb-3">Meetings & Notes</h4>
+        <form action="{% url 'update_meetings' selected_account.id %}" method="POST">
+            {% csrf_token %}
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">Internal Meeting Date</label>
+                    <input type="date" name="internalMeetingDate" class="form-control form-control-sm" value="{{ compliance_data.internalMeetingDate|default:'' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">External Meeting Date</label>
+                    <input type="date" name="externalMeetingDate" class="form-control form-control-sm" value="{{ compliance_data.externalMeetingDate|default:'' }}">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold small">Notes</label>
+                <textarea name="notes" class="form-control form-control-sm" rows="3">{{ compliance_data.notes|default:'' }}</textarea>
+            </div>
+            <div class="text-end">
+                <button type="submit" class="btn btn-sm btn-primary">Save Notes</button>
+            </div>
+        </form>
     </div>
 </div>

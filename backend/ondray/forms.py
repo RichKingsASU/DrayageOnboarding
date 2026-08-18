@@ -43,3 +43,15 @@ class DocumentUploadForm(forms.Form):
             if file.size > 10 * 1024 * 1024:
                 raise forms.ValidationError("File size must be under 10MB.")
         return file
+
+class ContactForm(forms.Form):
+    name = forms.CharField(max_length=255, required=True, label="Full Name")
+    role = forms.CharField(max_length=100, required=True, label="Role / Title")
+    email = forms.EmailField(required=True, label="Email Address")
+    phone = forms.CharField(max_length=50, required=False, label="Phone Number")
+
+class LaneForm(forms.Form):
+    origin = forms.CharField(max_length=255, required=True, label="Origin Port/Ramp")
+    destination = forms.CharField(max_length=255, required=True, label="Destination Facility")
+    volume = forms.CharField(max_length=100, required=True, label="Expected Volume (Monthly)")
+    equipment = forms.CharField(max_length=100, required=True, label="Equipment Required")
