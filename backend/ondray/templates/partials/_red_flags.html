@@ -1,0 +1,58 @@
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="h5 fw-bold text-danger mb-0">Red Flag SOP Alerts</h3>
+        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#addAlertForm">
+            <i data-lucide="plus" class="w-4 h-4 me-1"></i> Add Flag
+        </button>
+    </div>
+
+    <!-- Add Alert Form (Hidden by default) -->
+    <div class="collapse mb-3" id="addAlertForm">
+        <div class="card card-body bg-danger bg-opacity-10 border-danger">
+            <form action="{% url 'account_add_alert' selected_account.id %}" method="POST">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        {{ alert_form.message }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ alert_form.type }}
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <button type="submit" class="btn btn-sm btn-danger">Save Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Alerts -->
+    {% if selected_account.alerts %}
+        <div class="list-group">
+            {% for alert in selected_account.alerts %}
+                <div class="list-group-item list-group-item-{{ alert.type }} d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if alert.type == 'danger' %}
+                            <i data-lucide="shield-alert" class="text-danger w-5 h-5"></i>
+                        {% elif alert.type == 'warning' %}
+                            <i data-lucide="alert-triangle" class="text-warning w-5 h-5"></i>
+                        {% else %}
+                            <i data-lucide="info" class="text-info w-5 h-5"></i>
+                        {% endif %}
+                        <span class="fw-bold">{{ alert.message }}</span>
+                    </div>
+                    <form action="{% url 'account_delete_alert' selected_account.id alert.id %}" method="POST" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-link text-secondary p-0">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-light text-muted small text-center mb-0 border">
+            No Red Flag SOP requirements listed for this firm.
+        </div>
+    {% endif %}
+</div>

@@ -1,9 +1,3 @@
-/**
- * File: App.tsx
- * Purpose: Coordinates the top-level onboarding CRM experience and shared account state.
- * Dependencies: React state/effects, Supabase persistence, local storage fallback data, and dashboard/Kanban components.
- * Maintainer note: UI state is hydrated from Supabase first, with mock/local data retained as a fallback path.
- */
 import React, { useState, useEffect } from 'react';
 import { Account, Contact, AccessorialSOP, PipelineStage, UserProfile } from './types';
 import { 
@@ -77,9 +71,6 @@ function getInitialRoute(): { tab: 'kanban' | 'dashboard'; accountId: string } {
   return { tab, accountId };
 }
 
-/**
- * Renders the primary onboarding CRM shell and wires account selection, persistence, and tab navigation.
- */
 function MainApp() {
   const initialRoute = getInitialRoute();
   const [activeTab, setActiveTabState] = useState<'kanban' | 'dashboard'>(initialRoute.tab);
@@ -89,17 +80,13 @@ function MainApp() {
   const { accounts, accessorials: syncedAccessorials, loading, error: accountsError, isRealtimeConnected, retry: retryAccounts, setAccounts, setAccessorials: setSyncedAccessorials } = useAccounts();
   const { session, signOut } = useAuth();
 
-  // For the demo, we still use local state for contacts and accessorials,
-  // but they could be populated from the nested accounts data.
   const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
   const [localAccessorials, setLocalAccessorials] = useState<AccessorialSOP[]>(INITIAL_ACCESSORIALS);
   const accessorials = syncedAccessorials.length ? syncedAccessorials : localAccessorials;
   const setAccessorials = syncedAccessorials.length ? setSyncedAccessorials : setLocalAccessorials;
 
-  // Showcase assistant state
   const [showWalkthrough, setShowWalkthrough] = useState(true);
 
-  // Synchronize navigation state with browser history and URL query parameters
   const navigateTo = (tab: 'kanban' | 'dashboard', accountId?: string, pushHistory = true) => {
     const nextTab = tab;
     const nextAccountId = accountId || selectedAccountId;
@@ -135,12 +122,10 @@ function MainApp() {
         setSelectedAccountIdState(route.accountId);
       }
     };
-
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Reset entire state callback
   const handleResetDemoData = () => {
     if (confirm('Verify: Reset to initial factory-fresh Drayage Customer Onboarding demo datasets? This clears any modifications.')) {
       setAccounts(INITIAL_ACCOUNTS);
@@ -151,9 +136,7 @@ function MainApp() {
   };
 
   const handleUpdateAccountStage = async (accountId: string, newStage: PipelineStage) => {
-    // Optimistic UI update
     setAccounts(prev => prev.map(a => a.id === accountId ? { ...a, stage: newStage } : a));
-    // Persist to Azure DAB
     await fetch(`/api/Account/id/${accountId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -183,11 +166,7 @@ function MainApp() {
 
   const handleAddAccount = (name: string, billToCode = '') => {
     const newId = 'act_' + Date.now();
-    
-    // Create new Account - blanked out for onboarding. Bill-to code stays empty unless manually entered.
     const newAct = createBlankOnboardingAccount(newId, name, billToCode);
-
-    // Create twin default Accessorial Object
     const newSOP: AccessorialSOP = {
       id: 'acc_' + Date.now(),
       accountId: newId,
@@ -207,7 +186,6 @@ function MainApp() {
       freeTimeDays: 0,
       deliveryRules: ''
     };
-
     setAccounts(prev => [...prev, newAct]);
     setAccessorials(prev => [...prev, newSOP]);
     navigateTo('dashboard', newId);
@@ -260,47 +238,43 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans select-none antialiased">
-      
-      {/* Upper Navigation Bar */}
-      <header className="bg-[#0F172A] text-white border-b border-slate-750 sticky top-0 z-50 shadow-sm shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="vh-100 bg-light d-flex flex-column font-sans user-select-none antialiased">
+      <header className="bg-dark text-white border-bottom sticky-top shadow-sm flex-shrink-0" style={{ zIndex: 1050 }}>
+        <div className="container-fluid h-100 d-flex align-items-center justify-content-between py-2 px-3">
           
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-600 bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center shadow-md">
-              <Building2 className="w-5.5 h-5.5" />
+          <div className="d-flex align-items-center gap-3">
+            <div className="p-2 rounded bg-primary text-white d-flex align-items-center justify-content-center shadow-sm">
+              <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-white tracking-tight text-base sm:text-lg">Forrest Logistics</span>
-                <span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded">
+              <div className="d-flex align-items-center gap-2">
+                <span className="fw-bold tracking-tight fs-6">Forrest Logistics</span>
+                <span className="badge bg-primary bg-opacity-25 text-primary border border-primary px-2 py-1 rounded">
                   CUSTOMER ONBOARDING CRM
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium font-mono">Port & Rail Drayage Customer Qualification & Compliance Suite</p>
+              <p className="small text-secondary mb-0 font-monospace">Port & Rail Drayage Customer Qualification & Compliance Suite</p>
             </div>
           </div>
 
-          {/* Tab Selection */}
-          <div className="hidden sm:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+          <div className="d-none d-md-flex align-items-center gap-1 bg-secondary bg-opacity-25 p-1 rounded border">
             <button
               onClick={() => navigateTo('kanban')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`btn btn-sm d-flex align-items-center gap-2 fw-bold ${
                 activeTab === 'kanban' 
-                  ? 'bg-blue-600 text-white shadow-sm' 
-                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                  ? 'btn-primary shadow-sm' 
+                  : 'btn-outline-secondary text-light border-0'
               }`}
             >
               <Layers className="w-4 h-4" />
               Onboarding Pipeline & Forms
             </button>
-
             <button
               onClick={() => navigateTo('dashboard')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`btn btn-sm d-flex align-items-center gap-2 fw-bold ${
                 activeTab === 'dashboard' 
-                  ? 'bg-blue-600 text-white shadow-sm' 
-                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                  ? 'btn-primary shadow-sm' 
+                  : 'btn-outline-secondary text-light border-0'
               }`}
             >
               <UserSquare2 className="w-4 h-4" />
@@ -308,46 +282,46 @@ function MainApp() {
             </button>
           </div>
 
-          {/* Quick Resets & Profile Switcher */}
-          <div className="flex items-center gap-2.5">
+          <div className="d-flex align-items-center gap-2">
             <button
               onClick={handleResetDemoData}
-              className="text-white hover:text-slate-200 py-1.5 px-3 border border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-800 transition flex items-center gap-1 bg-slate-800 cursor-pointer"
+              className="btn btn-sm btn-outline-light d-flex align-items-center gap-1"
               title="Reset Database to Default Mock Datasets"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3 h-3" />
               Reset Demo
             </button>
             
-            <span className="text-slate-700 border-l h-5 hidden sm:block"></span>
+            <div className="vr text-secondary mx-2 d-none d-md-block"></div>
             
-            {/* User Profile & Specialist Switcher */}
-            <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1">
+            <div className="d-flex align-items-center gap-2 bg-secondary bg-opacity-25 border rounded px-2 py-1">
               <div 
-                className="w-7 h-7 rounded-lg bg-blue-600 font-extrabold text-white text-xs flex items-center justify-center shadow-xs border border-blue-400/40 shrink-0"
+                className="rounded bg-primary fw-bold text-white small d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                style={{ width: '30px', height: '30px' }}
                 title={`Active Profile: ${activeProfile.name} (${activeProfile.initials}) - Role: ${activeProfile.role}`}
               >
                 ({activeProfile.initials})
               </div>
-              <div className="flex flex-col text-left">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">SPECIALIST:</span>
+              <div className="d-flex flex-column text-start">
+                <div className="d-flex align-items-center gap-1">
+                  <span className="small text-secondary fw-bold d-none d-md-inline" style={{ fontSize: '10px' }}>SPECIALIST:</span>
                   <select
                     value={activeProfile.id}
                     onChange={(e) => {
                       const selected = PROFILES.find(p => p.id === e.target.value);
                       if (selected) setActiveProfile(selected);
                     }}
-                    className="bg-transparent text-[11px] font-bold text-white uppercase tracking-wider focus:outline-none cursor-pointer"
+                    className="form-select form-select-sm bg-transparent text-white fw-bold border-0 p-0 shadow-none text-uppercase"
+                    style={{ fontSize: '11px', minWidth: '120px' }}
                   >
                     {PROFILES.map(p => (
-                      <option key={p.id} value={p.id} className="bg-slate-900 text-white normal-case">
+                      <option key={p.id} value={p.id} className="bg-dark text-white text-capitalize">
                         {p.name} ({p.initials})
                       </option>
                     ))}
                   </select>
                 </div>
-                <span className="text-[9px] text-blue-300 font-semibold block leading-tight truncate max-w-[130px] sm:max-w-none">
+                <span className="text-primary fw-semibold d-block text-truncate" style={{ fontSize: '10px', maxWidth: '150px' }}>
                   {activeProfile.title}
                 </span>
               </div>
@@ -356,52 +330,48 @@ function MainApp() {
             {session && (
               <button
                 onClick={() => signOut()}
-                className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-800 transition cursor-pointer"
+                className="btn btn-sm btn-outline-danger"
                 title={`Sign out (${session.user?.email || 'User'})`}
-                aria-label="Sign out"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4" />
               </button>
             )}
           </div>
-
         </div>
       </header>
 
-      {/* Mobile Tab bar */}
-      <div className="flex sm:hidden bg-slate-900 border-b border-slate-950 px-2 py-1.5 overflow-x-auto gap-1 text-white select-none">
+      <div className="d-md-none bg-dark border-bottom px-2 py-2 d-flex overflow-auto gap-1 text-white">
         <button
           onClick={() => navigateTo('kanban')}
-          className={`flex-1 px-3 py-1.5 rounded text-xs font-bold text-center ${
-            activeTab === 'kanban' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300'
+          className={`flex-fill btn btn-sm fw-bold ${
+            activeTab === 'kanban' ? 'btn-primary shadow-sm' : 'btn-outline-secondary text-light border-0'
           }`}
         >
           Pipeline & Forms
         </button>
         <button
           onClick={() => navigateTo('dashboard')}
-          className={`flex-1 px-3 py-1.5 rounded text-xs font-bold text-center ${
-            activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300'
+          className={`flex-fill btn btn-sm fw-bold ${
+            activeTab === 'dashboard' ? 'btn-primary shadow-sm' : 'btn-outline-secondary text-light border-0'
           }`}
         >
           Customer 360-View
         </button>
       </div>
 
-      {/* Service Status Bar */}
       {(accountsError || !isRealtimeConnected) && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
-          <div className="max-w-7xl mx-auto flex flex-wrap gap-3 items-center text-xs font-medium text-amber-700">
+        <div className="alert alert-warning rounded-0 border-start-0 border-end-0 mb-0 px-4 py-2">
+          <div className="container-fluid d-flex flex-wrap gap-3 align-items-center small fw-medium">
             {accountsError && (
-              <span className="flex items-center gap-1.5">
-                <AlertOctagon className="w-3.5 h-3.5" />
+              <span className="d-flex align-items-center gap-2">
+                <AlertOctagon className="w-4 h-4" />
                 Customer data temporarily unavailable.
-                <button onClick={retryAccounts} className="underline hover:no-underline">Retry</button>
+                <button onClick={retryAccounts} className="btn btn-link btn-sm p-0">Retry</button>
               </span>
             )}
             {!isRealtimeConnected && !loading && (
-              <span className="flex items-center gap-1.5">
-                <WifiOff className="w-3.5 h-3.5" />
+              <span className="d-flex align-items-center gap-2">
+                <WifiOff className="w-4 h-4" />
                 Live updates temporarily unavailable. Refresh to see latest changes.
               </span>
             )}
@@ -409,86 +379,81 @@ function MainApp() {
         </div>
       )}
 
-      {/* PRESENTATION PLAYBOOK FLOATER PANEL */}
       {showWalkthrough && (
-        <section className="bg-blue-50/80 border-b border-blue-200 px-4 py-3 text-slate-900 shadow-inner">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex gap-2.5 items-start">
-              <div className="p-1 rounded bg-blue-600 text-white font-bold text-sm shrink-0 shadow-sm">
+        <section className="bg-primary bg-opacity-10 border-bottom px-4 py-3 text-dark shadow-sm">
+          <div className="container-fluid d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+            <div className="d-flex gap-3 align-items-start">
+              <div className="p-1 rounded bg-primary text-white shadow-sm">
                 <Star className="w-5 h-5 fill-current" />
               </div>
-              <div className="space-y-0.5">
-                <p className="text-xs font-bold text-slate-900">
+              <div>
+                <p className="small fw-bold mb-1">
                   Drayage Customer Onboarding CRM — Specialized Workflow Guide
                 </p>
-                <p className="text-[11px] text-slate-650 leading-relaxed font-semibold">
+                <p className="small text-secondary mb-0 fw-semibold">
                   Pre-loaded with drayage customer profiles, credit audit logic, document vaults, and SOP compliance rules. Use these 4 quick anchors to present:
                 </p>
               </div>
             </div>
-
             <button
               onClick={() => setShowWalkthrough(false)}
-              className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 px-2.5 py-1 rounded border border-slate-300 transition cursor-pointer self-stretch md:self-auto text-center"
+              className="btn btn-sm btn-outline-secondary fw-bold w-100 w-md-auto"
             >
               Hide Guide
             </button>
           </div>
 
-          {/* Quick Playbook Anchor shortcuts */}
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-4 gap-2.5 mt-2.5">
-            <button
-              onClick={() => {
-                navigateTo('kanban');
-              }}
-              className="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-left text-[11px] font-medium text-slate-700 transition cursor-pointer hover:border-blue-400 group shadow-2xs"
-            >
-              <strong className="text-slate-900 block group-hover:text-blue-600 transition-colors">1. 5-Stage Onboarding Kanban</strong>
-              "Drag & drop customer accounts through Inquiry, Credit Agreement, Account Setup, Kickoff, and Active Operations."
-            </button>
-
-            <button
-              onClick={() => {
-                navigateTo('kanban');
-                setTimeout(() => {
-                  const target = document.getElementById('interactive_onboarding_workspace');
-                  if (target) target.scrollIntoView({ behavior: 'smooth' });
-                }, 150);
-              }}
-              className="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-left text-[11px] font-medium text-slate-700 transition cursor-pointer hover:border-blue-400 group shadow-2xs"
-            >
-              <strong className="text-slate-900 block group-hover:text-blue-600 transition-colors">2. Interactive Forms & Vault Export</strong>
-              "Fill Onboarding Checklists, External Customer Questionnaires, or Internal Agendas and sign-off directly into Document Vault."
-            </button>
-
-            <button
-              onClick={() => {
-                navigateTo('dashboard', 'act_1');
-              }}
-              className="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-left text-[11px] font-medium text-slate-700 transition cursor-pointer hover:border-blue-400 group shadow-2xs"
-            >
-              <strong className="text-slate-900 block group-hover:text-blue-600 transition-colors">3. Document Vault & Upload Preview</strong>
-              "Select Chalas profile. Preview signed credit applications, contracts, and SOP files with live lightbox viewer."
-            </button>
-
-            <button
-              onClick={() => {
-                navigateTo('dashboard', 'act_1');
-              }}
-              className="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-left text-[11px] font-medium text-slate-700 transition cursor-pointer hover:border-blue-400 group shadow-2xs"
-            >
-              <strong className="text-slate-900 block group-hover:text-blue-600 transition-colors">4. Red Flag Alarms & Accessorial SOPs</strong>
-              "Inspect critical early-morning delivery alarms, pre-pull rules, chassis split fees, and contact role escalation directory."
-            </button>
+          <div className="container-fluid mt-3">
+            <div className="row g-2">
+              <div className="col-12 col-md-3">
+                <button
+                  onClick={() => navigateTo('kanban')}
+                  className="btn btn-light w-100 text-start shadow-sm border h-100 p-2"
+                >
+                  <strong className="d-block text-dark small mb-1">1. 5-Stage Onboarding Kanban</strong>
+                  <span className="small text-secondary" style={{ fontSize: '11px' }}>"Drag & drop customer accounts through Inquiry, Credit Agreement, Account Setup, Kickoff, and Active Operations."</span>
+                </button>
+              </div>
+              <div className="col-12 col-md-3">
+                <button
+                  onClick={() => {
+                    navigateTo('kanban');
+                    setTimeout(() => {
+                      const target = document.getElementById('interactive_onboarding_workspace');
+                      if (target) target.scrollIntoView({ behavior: 'smooth' });
+                    }, 150);
+                  }}
+                  className="btn btn-light w-100 text-start shadow-sm border h-100 p-2"
+                >
+                  <strong className="d-block text-dark small mb-1">2. Interactive Forms & Vault Export</strong>
+                  <span className="small text-secondary" style={{ fontSize: '11px' }}>"Fill Onboarding Checklists, External Customer Questionnaires, or Internal Agendas and sign-off directly into Document Vault."</span>
+                </button>
+              </div>
+              <div className="col-12 col-md-3">
+                <button
+                  onClick={() => navigateTo('dashboard', 'act_1')}
+                  className="btn btn-light w-100 text-start shadow-sm border h-100 p-2"
+                >
+                  <strong className="d-block text-dark small mb-1">3. Document Vault & Upload Preview</strong>
+                  <span className="small text-secondary" style={{ fontSize: '11px' }}>"Select Chalas profile. Preview signed credit applications, contracts, and SOP files with live lightbox viewer."</span>
+                </button>
+              </div>
+              <div className="col-12 col-md-3">
+                <button
+                  onClick={() => navigateTo('dashboard', 'act_1')}
+                  className="btn btn-light w-100 text-start shadow-sm border h-100 p-2"
+                >
+                  <strong className="d-block text-dark small mb-1">4. Red Flag Alarms & Accessorial SOPs</strong>
+                  <span className="small text-secondary" style={{ fontSize: '11px' }}>"Inspect critical early-morning delivery alarms, pre-pull rules, chassis split fees, and contact role escalation directory."</span>
+                </button>
+              </div>
+            </div>
           </div>
         </section>
       )}
 
-      {/* Primary Application Page Wrapper */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
-        
-        {/* Render Active Tab */}
-        <div className="min-h-[500px]">
+      <main className="container-fluid px-4 py-4 flex-grow-1 h-100 overflow-auto">
+        <div style={{ minHeight: '500px' }}>
           {activeTab === 'kanban' && (
             <KanbanBoard
               accounts={accounts}
@@ -516,24 +481,21 @@ function MainApp() {
             </ErrorBoundary>
           )}
         </div>
-
       </main>
 
-      {/* Layout Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 mt-12 shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-medium gap-4">
-          <p>© 2026 Forrest Logistics Drayage Customer Onboarding CRM. Managed by Tanya Wahl.</p>
-          <div className="flex gap-4 items-center flex-wrap">
-            <span className="hover:underline cursor-pointer">Security &amp; Credit Audit Protocol</span>
+      <footer className="bg-white border-top py-4 mt-4 flex-shrink-0">
+        <div className="container-fluid d-flex flex-column flex-md-row align-items-center justify-content-between small text-secondary fw-medium gap-3">
+          <p className="mb-0">© 2026 Forrest Logistics Drayage Customer Onboarding CRM. Managed by Tanya Wahl.</p>
+          <div className="d-flex gap-3 align-items-center flex-wrap">
+            <span className="text-decoration-underline" style={{ cursor: 'pointer' }}>Security &amp; Credit Audit Protocol</span>
             <span>•</span>
-            <span className="hover:underline cursor-pointer">Terminal SOP Rules</span>
+            <span className="text-decoration-underline" style={{ cursor: 'pointer' }}>Terminal SOP Rules</span>
             <span>•</span>
-            <span className="hover:underline cursor-pointer" onClick={() => setShowWalkthrough(true)}>Show Demonstration Guide</span>
+            <span className="text-decoration-underline" style={{ cursor: 'pointer' }} onClick={() => setShowWalkthrough(true)}>Show Demonstration Guide</span>
           </div>
         </div>
-        {/* Build diagnostics — only visible in local development */}
         {APP_ENV === 'development' && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-400 font-mono">
+          <div className="container-fluid mt-2 d-flex flex-wrap gap-3 small text-muted font-monospace" style={{ fontSize: '10px' }}>
             <span>ENV: {APP_ENV}</span>
             <span>·</span>
             <span>AUTH: {AUTH_MODE}</span>
@@ -544,7 +506,7 @@ function MainApp() {
             <span>·</span>
             <span>BUILT: {BUILD_TIME.split('T')[0]}</span>
             <span>·</span>
-            <span className={`flex items-center gap-1 ${isRealtimeConnected ? 'text-green-500' : 'text-slate-400'}`}>
+            <span className={`d-flex align-items-center gap-1 ${isRealtimeConnected ? 'text-success' : 'text-muted'}`}>
               {isRealtimeConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
               Realtime
             </span>
@@ -558,20 +520,21 @@ function MainApp() {
 
 function ConfigErrorScreen() {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="max-w-lg rounded-2xl border border-red-200 bg-white p-8 shadow-sm text-center">
-        <AlertOctagon className="mx-auto mb-4 h-10 w-10 text-red-600" />
-        <h1 className="text-xl font-bold text-slate-900">Supabase configuration required</h1>
-        <p className="mt-3 text-sm text-slate-600">
-          Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the frontend environment before starting the onboarding CRM.
-        </p>
+    <div className="vh-100 bg-light d-flex align-items-center justify-content-center p-4">
+      <div className="card shadow-sm border-danger" style={{ maxWidth: '500px', width: '100%' }}>
+        <div className="card-body text-center p-5">
+          <AlertOctagon className="mx-auto mb-3 text-danger w-25 h-25" />
+          <h1 className="h4 fw-bold text-dark">Supabase configuration required</h1>
+          <p className="mt-3 small text-secondary">
+            Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the frontend environment before starting the onboarding CRM.
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
 export default function App() {
-  // Gate the entire app on Azure configuration being present.
   if (!isAzureConfigured) {
     return <ConfigErrorScreen />;
   }
@@ -588,10 +551,10 @@ function AppContent() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-slate-500">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-sm font-medium">Verifying session...</p>
+      <div className="vh-100 bg-light d-flex align-items-center justify-content-center">
+        <div className="d-flex flex-column align-items-center gap-3 text-secondary">
+          <Loader2 className="w-8 h-8 text-primary" style={{ animation: 'spinner-border .75s linear infinite' }} />
+          <p className="small fw-medium mb-0">Verifying session...</p>
         </div>
       </div>
     );
@@ -599,11 +562,11 @@ function AppContent() {
 
   if (isAutoAuthenticating) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-slate-500">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-sm font-medium">Preparing the OnDray staging workspace…</p>
-          <p className="text-xs text-slate-400">Creating secure demo workspace...</p>
+      <div className="vh-100 bg-light d-flex align-items-center justify-content-center">
+        <div className="d-flex flex-column align-items-center gap-3 text-secondary">
+          <Loader2 className="w-8 h-8 text-primary" style={{ animation: 'spinner-border .75s linear infinite' }} />
+          <p className="small fw-medium mb-0">Preparing the OnDray staging workspace…</p>
+          <p className="small text-muted mb-0">Creating secure demo workspace...</p>
         </div>
       </div>
     );
@@ -611,16 +574,16 @@ function AppContent() {
 
   if (error && authMode === 'auto_demo') {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center space-y-4">
-          <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+      <div className="vh-100 bg-light d-flex align-items-center justify-content-center p-3">
+        <div className="card shadow-sm border w-100 text-center p-4" style={{ maxWidth: '400px' }}>
+          <div className="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '48px', height: '48px' }}>
             <AlertOctagon className="w-6 h-6" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-900">Unable to prepare the staging workspace</h2>
-          <p className="text-sm text-slate-500">{error.message}</p>
+          <h2 className="h5 fw-semibold text-dark">Unable to prepare the staging workspace</h2>
+          <p className="small text-secondary">{error.message}</p>
           <button 
             onClick={retry}
-            className="w-full bg-slate-900 text-white font-medium py-2 rounded-lg hover:bg-slate-800 transition"
+            className="btn btn-dark fw-medium w-100 mt-2"
           >
             Retry
           </button>
@@ -632,10 +595,10 @@ function AppContent() {
   if (!isAuthenticated) {
     if (authMode === 'auto_demo') {
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-          <div className="text-center space-y-4">
-             <p className="text-slate-600">Failed to establish demo session.</p>
-             <button onClick={retry} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Retry</button>
+        <div className="vh-100 bg-light d-flex align-items-center justify-content-center p-3">
+          <div className="text-center">
+             <p className="text-secondary mb-3">Failed to establish demo session.</p>
+             <button onClick={retry} className="btn btn-primary">Retry</button>
           </div>
         </div>
       );
@@ -646,8 +609,8 @@ function AppContent() {
   return (
     <ErrorBoundary fallbackTitle="Application error — please reload">
       {authMode === 'auto_demo' && (
-        <div className="bg-amber-300 text-amber-900 text-xs font-bold text-center py-1.5 flex items-center justify-center gap-2">
-          <FlaskConical className="w-3.5 h-3.5" />
+        <div className="bg-warning text-dark small fw-bold text-center py-2 d-flex align-items-center justify-content-center gap-2 m-0 border-bottom border-warning-subtle">
+          <FlaskConical className="w-4 h-4" />
           Staging Demo — Synthetic Data Only — Not for Production Use
         </div>
       )}

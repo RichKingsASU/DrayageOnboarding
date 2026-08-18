@@ -1,0 +1,33 @@
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h3 class="h5 fw-bold mb-0">Compliance & Meetings Workspace</h3>
+    </div>
+    <div class="card-body">
+        {% if compliance_data.checklist %}
+            <div class="list-group list-group-flush">
+                {% for item in compliance_data.checklist %}
+                    <div class="list-group-item py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <span class="badge bg-secondary mb-1">{{ item.group }}</span>
+                                <h6 class="mb-0 fw-bold">{{ item.task }}</h6>
+                            </div>
+                            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                <form action="{% url 'update_compliance_item' selected_account.id item.id %}" method="POST" class="d-inline-flex gap-2">
+                                    {% csrf_token %}
+                                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="Pending" {% if item.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                        <option value="Done" {% if item.status == 'Done' %}selected{% endif %}>Done</option>
+                                        <option value="N/A" {% if item.status == 'N/A' %}selected{% endif %}>N/A</option>
+                                    </select>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted small mb-0 text-center">No compliance items available.</p>
+        {% endif %}
+    </div>
+</div>

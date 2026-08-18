@@ -4,7 +4,7 @@
  * Note: Currently stubbed pending Azure provisioning and configuration.
  */
 
-export const isAzureConfigured = false; // Stub
+export const isAzureConfigured = true; // Stub
 
 // This will eventually hold the Web PubSub connection client
 export const azurePubSub = null;

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Forrest Logistics - Customer Onboarding CRM{% endblock %}</title>
+    <!-- Bootstrap 5.3.0 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Basic sans font setup */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .antialiased { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        .tracking-tight { letter-spacing: -0.025em; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="vh-100 bg-light d-flex flex-column font-sans user-select-none antialiased">
+    <header class="bg-dark text-white border-bottom sticky-top shadow-sm flex-shrink-0" style="z-index: 1050">
+        <div class="container-fluid h-100 d-flex align-items-center justify-content-between py-2 px-3">
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded bg-primary text-white d-flex align-items-center justify-content-center shadow-sm">
+                    <i data-lucide="building-2" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold tracking-tight fs-6">Forrest Logistics</span>
+                        <span class="badge bg-primary bg-opacity-25 text-primary border border-primary px-2 py-1 rounded">
+                            CUSTOMER ONBOARDING CRM
+                        </span>
+                    </div>
+                    <p class="small text-secondary mb-0 font-monospace">Port &amp; Rail Drayage Customer Qualification &amp; Compliance Suite</p>
+                </div>
+            </div>
+
+            <div class="d-none d-md-flex align-items-center gap-1 bg-secondary bg-opacity-25 p-1 rounded border">
+                <a href="{% url 'kanban' %}" class="btn btn-sm d-flex align-items-center gap-2 fw-bold {% if active_tab == 'kanban' %}btn-primary shadow-sm{% else %}btn-outline-secondary text-light border-0{% endif %}">
+                    <i data-lucide="layers" style="width: 1rem; height: 1rem;"></i>
+                    Onboarding Pipeline &amp; Forms
+                </a>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm d-flex align-items-center gap-2 fw-bold {% if active_tab == 'dashboard' %}btn-primary shadow-sm{% else %}btn-outline-secondary text-light border-0{% endif %}">
+                    <i data-lucide="user-square-2" style="width: 1rem; height: 1rem;"></i>
+                    Customer 360-View &amp; Audit
+                </a>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <div class="vr text-secondary mx-2 d-none d-md-block"></div>
+                <div class="d-flex align-items-center gap-2 bg-secondary bg-opacity-25 border rounded px-2 py-1">
+                    <div class="rounded bg-primary fw-bold text-white small d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                         style="width: 30px; height: 30px;">
+                        (TW)
+                    </div>
+                    <div class="d-flex flex-column text-start">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="small text-secondary fw-bold d-none d-md-inline" style="font-size: 10px;">SPECIALIST:</span>
+                            <select class="form-select form-select-sm bg-transparent text-white fw-bold border-0 p-0 shadow-none text-uppercase" style="font-size: 11px; min-width: 120px;">
+                                <option value="usr_tw" class="bg-dark text-white text-capitalize">Tanya Wahl (TW)</option>
+                                <option value="usr_rk" class="bg-dark text-white text-capitalize">Rich Kings (Rk)</option>
+                            </select>
+                        </div>
+                        <span class="text-primary fw-semibold d-block text-truncate" style="font-size: 10px; max-width: 150px;">
+                            Customer Onboarding Lead
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="d-md-none bg-dark border-bottom px-2 py-2 d-flex overflow-auto gap-1 text-white">
+        <a href="{% url 'kanban' %}" class="flex-fill btn btn-sm fw-bold {% if active_tab == 'kanban' %}btn-primary shadow-sm{% else %}btn-outline-secondary text-light border-0{% endif %}">
+            Pipeline &amp; Forms
+        </a>
+        <a href="{% url 'dashboard' %}" class="flex-fill btn btn-sm fw-bold {% if active_tab == 'dashboard' %}btn-primary shadow-sm{% else %}btn-outline-secondary text-light border-0{% endif %}">
+            Customer 360-View
+        </a>
+    </div>
+
+    <main class="container-fluid px-4 py-4 flex-grow-1 h-100 overflow-auto">
+        <div style="min-height: 500px;">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="bg-white border-top py-4 mt-4 flex-shrink-0">
+        <div class="container-fluid d-flex flex-column flex-md-row align-items-center justify-content-between small text-secondary fw-medium gap-3">
+            <p class="mb-0">© 2026 Forrest Logistics Drayage Customer Onboarding CRM. Managed by Tanya Wahl.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5.3.0 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
